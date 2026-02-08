@@ -1,9 +1,10 @@
-from typing import Dict
-from gmail_service import GmailService
+
 from google.adk.tools import ToolContext
 
+from gmail_service import GmailService
 
-def read_email(tool_context: ToolContext, email_id: str) -> Dict:
+
+def read_email(tool_context: ToolContext, email_id: str) -> dict:
     """Read the full content of an email by its ID."""
 
     gmail = GmailService.get_instance()

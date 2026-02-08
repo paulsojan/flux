@@ -1,8 +1,10 @@
 import base64
+import json
 import os
 from email.mime.text import MIMEText
 from typing import Optional
 
+from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
@@ -12,19 +14,17 @@ SCOPES = [
     "https://www.googleapis.com/auth/gmail.send",
 ]
 
+TOKEN_PATH = "gmail_token.json"
 
-def _client_config() -> dict:
+
+def client_config() -> dict:
     return {
         "web": {
-            "client_id": os.getenv("GMAIL_CLIENT_ID"),
-            "client_secret": os.getenv("GMAIL_CLIENT_SECRET"),
+            "client_id": os.environ["GMAIL_CLIENT_ID"],
+            "client_secret": os.environ["GMAIL_CLIENT_SECRET"],
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": [
-                os.getenv(
-                    "GMAIL_REDIRECT_URI",
-                )
-            ],
+            "redirect_uris": [os.environ["GMAIL_REDIRECT_URI"]],
         }
     }
 
@@ -33,91 +33,72 @@ class GmailService:
     _instance: Optional["GmailService"] = None
 
     def __init__(self):
-        self.creds: Optional[Credentials] = None
-        self.service = None
+        self.creds = self._load_token()
+        self.service = self._build_service()
 
     @classmethod
     def get_instance(cls) -> "GmailService":
-        if cls._instance is None:
+        if not cls._instance:
             cls._instance = cls()
         return cls._instance
 
     @property
     def is_authenticated(self) -> bool:
-        return self.creds is not None and self.creds.valid
+        return bool(self.creds and self.creds.valid)
 
     def get_auth_url(self) -> str:
-        flow = Flow.from_client_config(_client_config(), scopes=SCOPES)
-        flow.redirect_uri = os.getenv("GMAIL_REDIRECT_URI")
-        auth_url, _ = flow.authorization_url(
+        flow = Flow.from_client_config(client_config(), SCOPES)
+        flow.redirect_uri = os.environ["GMAIL_REDIRECT_URI"]
+
+        url, _ = flow.authorization_url(
             access_type="offline",
-            include_granted_scopes="true",
             prompt="consent",
         )
-        return auth_url
+        return url
 
-    def handle_callback(self, code: str):
-        flow = Flow.from_client_config(_client_config(), scopes=SCOPES)
-        flow.redirect_uri = os.getenv("GMAIL_REDIRECT_URI")
+    def handle_callback(self, code: str) -> None:
+        flow = Flow.from_client_config(client_config(), SCOPES)
+        flow.redirect_uri = os.environ["GMAIL_REDIRECT_URI"]
         flow.fetch_token(code=code)
+
         self.creds = flow.credentials
-        self.service = build("gmail", "v1", credentials=self.creds)
+        self._save_token(self.creds)
+        self.service = self._build_service()
 
     def list_messages(
-        self, label: str = "INBOX", max_results: int = 20, query: str = ""
+        self,
+        label: str = "INBOX",
+        query: str = "",
+        max_results: int = 20,
     ) -> list[dict]:
-        if not self.is_authenticated:
-            return []
-        results = (
+        self._require_auth()
+
+        res = (
             self.service.users()
             .messages()
-            .list(userId="me", labelIds=[label], maxResults=max_results, q=query)
+            .list(
+                userId="me",
+                labelIds=[label] if label else None,
+                q=query or None,
+                maxResults=max_results,
+            )
             .execute()
         )
-        messages = results.get("messages", [])
-        email_list = []
-        for msg in messages:
-            msg_data = (
-                self.service.users()
-                .messages()
-                .get(
-                    userId="me",
-                    id=msg["id"],
-                    format="metadata",
-                    metadataHeaders=["From", "To", "Subject", "Date"],
-                )
-                .execute()
-            )
-            headers = {
-                h["name"]: h["value"]
-                for h in msg_data.get("payload", {}).get("headers", [])
-            }
-            email_list.append(
-                {
-                    "id": msg["id"],
-                    "threadId": msg_data.get("threadId"),
-                    "from": headers.get("From", ""),
-                    "to": headers.get("To", ""),
-                    "subject": headers.get("Subject", "(no subject)"),
-                    "date": headers.get("Date", ""),
-                    "snippet": msg_data.get("snippet", ""),
-                }
-            )
-        return email_list
+
+        return [self._get_message_metadata(m["id"]) for m in res.get("messages", [])]
 
     def get_message(self, message_id: str) -> dict:
-        if not self.is_authenticated:
-            return {"error": "Not authenticated"}
+        self._require_auth()
+
         msg = (
             self.service.users()
             .messages()
             .get(userId="me", id=message_id, format="full")
             .execute()
         )
-        headers = {
-            h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])
-        }
-        body = self._extract_body(msg.get("payload", {}))
+
+        headers = self._headers_dict(msg)
+
         return {
             "id": msg["id"],
             "threadId": msg.get("threadId"),
@@ -125,80 +106,93 @@ class GmailService:
             "to": headers.get("To", ""),
             "subject": headers.get("Subject", "(no subject)"),
             "date": headers.get("Date", ""),
-            "body": body,
+            "body": self._extract_body(msg["payload"]),
             "labelIds": msg.get("labelIds", []),
         }
 
-    def _extract_body(self, payload: dict) -> str:
-        if payload.get("mimeType") == "text/plain" and payload.get("body", {}).get(
-            "data"
-        ):
-            return base64.urlsafe_b64decode(payload["body"]["data"]).decode(
-                "utf-8", errors="replace"
-            )
-        if payload.get("mimeType", "").startswith("multipart"):
-            for part in payload.get("parts", []):
-                text = self._extract_body(part)
-                if text:
-                    return text
-        if payload.get("mimeType") == "text/html" and payload.get("body", {}).get(
-            "data"
-        ):
-            return base64.urlsafe_b64decode(payload["body"]["data"]).decode(
-                "utf-8", errors="replace"
-            )
-        return ""
-
     def send_message(self, to: str, subject: str, body: str) -> dict:
-        if not self.is_authenticated:
-            return {"error": "Not authenticated"}
-        message = MIMEText(body)
-        message["to"] = to
-        message["subject"] = subject
-        raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
+        self._require_auth()
+
+        msg = MIMEText(body)
+        msg["to"] = to
+        msg["subject"] = subject
+
+        raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
         sent = (
             self.service.users()
             .messages()
             .send(userId="me", body={"raw": raw})
             .execute()
         )
-        return {"id": sent["id"], "status": "sent"}
+
+        return {"id": sent["id"]}
 
     def search_messages(self, query: str, max_results: int = 10) -> list[dict]:
-        if not self.is_authenticated:
-            return []
-        results = (
+        return self.list_messages(query=query, max_results=max_results)
+
+    def _build_service(self):
+        if not self.creds:
+            return None
+
+        if self.creds.expired and self.creds.refresh_token:
+            self.creds.refresh(Request())
+            self._save_token(self.creds)
+
+        return build("gmail", "v1", credentials=self.creds)
+
+    def _require_auth(self):
+        if not self.service:
+            raise RuntimeError("Gmail not authenticated")
+
+    def _save_token(self, creds: Credentials):
+        with open(TOKEN_PATH, "w") as f:
+            f.write(creds.to_json())
+
+    def _load_token(self) -> Credentials | None:
+        if not os.path.exists(TOKEN_PATH):
+            return None
+
+        with open(TOKEN_PATH) as f:
+            return Credentials.from_authorized_user_info(json.load(f), SCOPES)
+
+    def _headers_dict(self, msg: dict) -> dict[str, str]:
+        return {
+            h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])
+        }
+
+    def _get_message_metadata(self, msg_id: str) -> dict:
+        msg = (
             self.service.users()
             .messages()
-            .list(userId="me", maxResults=max_results, q=query)
+            .get(
+                userId="me",
+                id=msg_id,
+                format="metadata",
+                metadataHeaders=["From", "To", "Subject", "Date"],
+            )
             .execute()
         )
-        messages = results.get("messages", [])
-        email_list = []
-        for msg in messages:
-            msg_data = (
-                self.service.users()
-                .messages()
-                .get(
-                    userId="me",
-                    id=msg["id"],
-                    format="metadata",
-                    metadataHeaders=["From", "To", "Subject", "Date"],
-                )
-                .execute()
-            )
-            headers = {
-                h["name"]: h["value"]
-                for h in msg_data.get("payload", {}).get("headers", [])
-            }
-            email_list.append(
-                {
-                    "id": msg["id"],
-                    "from": headers.get("From", ""),
-                    "to": headers.get("To", ""),
-                    "subject": headers.get("Subject", "(no subject)"),
-                    "date": headers.get("Date", ""),
-                    "snippet": msg_data.get("snippet", ""),
-                }
-            )
-        return email_list
+
+        headers = self._headers_dict(msg)
+
+        return {
+            "id": msg_id,
+            "threadId": msg.get("threadId"),
+            "from": headers.get("From", ""),
+            "to": headers.get("To", ""),
+            "subject": headers.get("Subject", "(no subject)"),
+            "date": headers.get("Date", ""),
+            "snippet": msg.get("snippet", ""),
+        }
+
+    def _extract_body(self, payload: dict) -> str:
+        body = payload.get("body", {}).get("data")
+        if body:
+            return base64.urlsafe_b64decode(body).decode("utf-8", errors="replace")
+
+        for part in payload.get("parts", []):
+            text = self._extract_body(part)
+            if text:
+                return text
+
+        return ""

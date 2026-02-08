@@ -1,9 +1,10 @@
-from typing import Dict
-from gmail_service import GmailService
+
 from google.adk.tools import ToolContext
 
+from gmail_service import GmailService
 
-def send_email(tool_context: ToolContext, to: str, subject: str, body: str) -> Dict:
+
+def send_email(tool_context: ToolContext, to: str, subject: str, body: str) -> dict:
     """Send an email. Requires recipient address, subject, and body text."""
 
     gmail = GmailService.get_instance()

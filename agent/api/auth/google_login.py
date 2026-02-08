@@ -1,6 +1,7 @@
 from fastapi import APIRouter
-from gmail_service import GmailService
 from fastapi.responses import RedirectResponse
+
+from gmail_service import GmailService
 
 router = APIRouter()
 

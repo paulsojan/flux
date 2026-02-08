@@ -15,3 +15,33 @@ dependencies = [
     "google-auth-httplib2",
     "google-auth-oauthlib",
 ]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+# Enable specific rule sets
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # Pyflakes
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "I",    # isort
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",  # line too long
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.0",
+]

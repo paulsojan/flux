@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import os
-from typing import Optional
-import uvicorn
 
+import uvicorn
 from ag_ui_adk import ADKAgent, add_adk_fastapi_endpoint
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -14,13 +13,14 @@ from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
 from google.genai import types
 from pydantic import BaseModel, Field
+
+from api import router
+from gmail_service import GmailService
 from tools.list_inbox import list_inbox
-from tools.search_emails import search_emails
 from tools.list_sent import list_sent
 from tools.read_email import read_email
+from tools.search_emails import search_emails
 from tools.send_email import send_email
-from gmail_service import GmailService
-from api import router
 
 load_dotenv()
 
@@ -29,7 +29,7 @@ load_dotenv()
 class EmailState(BaseModel):
     emails: list[dict] = Field(default_factory=list)
     sent_emails: list[dict] = Field(default_factory=list)
-    current_email: Optional[dict] = Field(default=None)
+    current_email: dict | None = Field(default=None)
     current_view: str = Field(default="inbox")
     is_authenticated: bool = Field(default=False)
     auth_url: str = Field(default="")
@@ -59,7 +59,7 @@ def on_before_agent(callback_context: CallbackContext):
 
 def before_model_modifier(
     callback_context: CallbackContext, llm_request: LlmRequest
-) -> Optional[LlmResponse]:
+) -> LlmResponse | None:
     agent_name = callback_context.agent_name
     if agent_name == "EmailAgent":
         is_auth = callback_context.state.get("is_authenticated", False)
@@ -90,7 +90,7 @@ def before_model_modifier(
 
 def simple_after_model_modifier(
     callback_context: CallbackContext, llm_response: LlmResponse
-) -> Optional[LlmResponse]:
+) -> LlmResponse | None:
     agent_name = callback_context.agent_name
     if agent_name == "EmailAgent":
         if llm_response.content and llm_response.content.parts:

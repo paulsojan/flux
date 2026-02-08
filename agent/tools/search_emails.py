@@ -1,9 +1,10 @@
-from typing import Dict
-from gmail_service import GmailService
+
 from google.adk.tools import ToolContext
 
+from gmail_service import GmailService
 
-def search_emails(tool_context: ToolContext, query: str, max_results: int = 10) -> Dict:
+
+def search_emails(tool_context: ToolContext, query: str, max_results: int = 10) -> dict:
     """Search emails using Gmail search syntax (from:, subject:, is:unread, has:attachment, etc.)."""
 
     gmail = GmailService.get_instance()

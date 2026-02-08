@@ -1,9 +1,10 @@
-from typing import Dict
-from gmail_service import GmailService
+
 from google.adk.tools import ToolContext
 
+from gmail_service import GmailService
 
-def list_inbox(tool_context: ToolContext, max_results: int = 20) -> Dict:
+
+def list_inbox(tool_context: ToolContext, max_results: int = 20) -> dict:
     """List emails in the inbox. Returns email summaries with id, from, subject, date, snippet."""
 
     gmail = GmailService.get_instance()
