@@ -1,201 +1,154 @@
-"""Shared State feature."""
-
 from __future__ import annotations
 
-import json
-from typing import Dict, Optional
+import os
+from typing import Optional
+import uvicorn
 
 from ag_ui_adk import ADKAgent, add_adk_fastapi_endpoint
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
-from google.adk.tools import ToolContext
 from google.genai import types
 from pydantic import BaseModel, Field
+from tools.list_inbox import list_inbox
+from tools.search_emails import search_emails
+from tools.list_sent import list_sent
+from tools.read_email import read_email
+from tools.send_email import send_email
+from gmail_service import GmailService
+from api import router
 
 load_dotenv()
 
 
-class ProverbsState(BaseModel):
-    """List of the proverbs being written."""
-
-    proverbs: list[str] = Field(
-        default_factory=list,
-        description="The list of already written proverbs",
-    )
-
-
-def set_proverbs(tool_context: ToolContext, new_proverbs: list[str]) -> Dict[str, str]:
-    """
-    Set the list of provers using the provided new list.
-
-    Args:
-        "new_proverbs": {
-            "type": "array",
-            "items": {"type": "string"},
-            "description": "The new list of proverbs to maintain",
-        }
-
-    Returns:
-        Dict indicating success status and message
-    """
-    try:
-        # Put this into a state object just to confirm the shape
-        new_state = {"proverbs": new_proverbs}
-        tool_context.state["proverbs"] = new_state["proverbs"]
-        return {"status": "success", "message": "Proverbs updated successfully"}
-
-    except Exception as e:
-        return {"status": "error", "message": f"Error updating proverbs: {str(e)}"}
+# --- State Model ---
+class EmailState(BaseModel):
+    emails: list[dict] = Field(default_factory=list)
+    sent_emails: list[dict] = Field(default_factory=list)
+    current_email: Optional[dict] = Field(default=None)
+    current_view: str = Field(default="inbox")
+    is_authenticated: bool = Field(default=False)
+    auth_url: str = Field(default="")
 
 
-def get_weather(tool_context: ToolContext, location: str) -> Dict[str, str]:
-    """Get the weather for a given location. Ensure location is fully spelled out."""
-    return {"status": "success", "message": f"The weather in {location} is sunny."}
-
-
+# --- Callbacks ---
 def on_before_agent(callback_context: CallbackContext):
-    """
-    Initialize proverbs state if it doesn't exist.
-    """
-
-    if "proverbs" not in callback_context.state:
-        # Initialize with default recipe
-        default_proverbs = []
-        callback_context.state["proverbs"] = default_proverbs
-
+    gmail = GmailService.get_instance()
+    if "emails" not in callback_context.state:
+        callback_context.state["emails"] = []
+    if "sent_emails" not in callback_context.state:
+        callback_context.state["sent_emails"] = []
+    if "current_email" not in callback_context.state:
+        callback_context.state["current_email"] = None
+    if "current_view" not in callback_context.state:
+        callback_context.state["current_view"] = "inbox"
+    callback_context.state["is_authenticated"] = gmail.is_authenticated
+    if not gmail.is_authenticated:
+        try:
+            callback_context.state["auth_url"] = gmail.get_auth_url()
+        except Exception:
+            callback_context.state["auth_url"] = ""
+    else:
+        callback_context.state["auth_url"] = ""
     return None
 
 
-# --- Define the Callback Function ---
-#  modifying the agent's system prompt to incude the current state of the proverbs list
 def before_model_modifier(
     callback_context: CallbackContext, llm_request: LlmRequest
 ) -> Optional[LlmResponse]:
-    """Inspects/modifies the LLM request or skips the call."""
     agent_name = callback_context.agent_name
-    if agent_name == "ProverbsAgent":
-        proverbs_json = "No proverbs yet"
-        if (
-            "proverbs" in callback_context.state
-            and callback_context.state["proverbs"] is not None
-        ):
-            try:
-                proverbs_json = json.dumps(callback_context.state["proverbs"], indent=2)
-            except Exception as e:
-                proverbs_json = f"Error serializing proverbs: {str(e)}"
-        # --- Modification Example ---
-        # Add a prefix to the system instruction
+    if agent_name == "EmailAgent":
+        is_auth = callback_context.state.get("is_authenticated", False)
+        current_view = callback_context.state.get("current_view", "inbox")
+        email_count = len(callback_context.state.get("emails", []))
+
+        context = f"""
+                Current state:
+                - Authenticated: {is_auth}
+                - Current view: {current_view}
+                - Emails loaded: {email_count}
+                """
         original_instruction = llm_request.config.system_instruction or types.Content(
             role="system", parts=[]
         )
-        prefix = f"""You are a helpful assistant for maintaining a list of proverbs.
-        This is the current state of the list of proverbs: {proverbs_json}
-        When you modify the list of proverbs (wether to add, remove, or modify one or more proverbs), use the set_proverbs tool to update the list."""
-        # Ensure system_instruction is Content and parts list exists
         if not isinstance(original_instruction, types.Content):
-            # Handle case where it might be a string (though config expects Content)
             original_instruction = types.Content(
                 role="system", parts=[types.Part(text=str(original_instruction))]
             )
         if not original_instruction.parts:
             original_instruction.parts = [types.Part(text="")]
-
-        # Modify the text of the first part
         if original_instruction.parts and len(original_instruction.parts) > 0:
-            modified_text = prefix + (original_instruction.parts[0].text or "")
+            modified_text = context + (original_instruction.parts[0].text or "")
             original_instruction.parts[0].text = modified_text
         llm_request.config.system_instruction = original_instruction
-
     return None
 
 
-# --- Define the Callback Function ---
 def simple_after_model_modifier(
     callback_context: CallbackContext, llm_response: LlmResponse
 ) -> Optional[LlmResponse]:
-    """Stop the consecutive tool calling of the agent"""
     agent_name = callback_context.agent_name
-    # --- Inspection ---
-    if agent_name == "ProverbsAgent":
+    if agent_name == "EmailAgent":
         if llm_response.content and llm_response.content.parts:
-            # Assuming simple text response for this example
             if (
                 llm_response.content.role == "model"
                 and llm_response.content.parts[0].text
             ):
                 callback_context._invocation_context.end_invocation = True
-
-        elif llm_response.error_message:
-            return None
-        else:
-            return None  # Nothing to modify
     return None
 
 
-proverbs_agent = LlmAgent(
-    name="ProverbsAgent",
+email_agent = LlmAgent(
+    name="EmailAgent",
     model="gemini-2.5-flash",
-    instruction="""
-        When a user asks you to do anything regarding proverbs, you MUST use the set_proverbs tool.
+    instruction="""You are a helpful Gmail assistant. You help users manage their email.
 
-        IMPORTANT RULES ABOUT PROVERBS AND THE SET_PROVERBS TOOL:
-        1. Always use the set_proverbs tool for any proverbs-related requests
-        2. Always pass the COMPLETE LIST of proverbs to the set_proverbs tool. If the list had 5 proverbs and you removed one, you must pass the complete list of 4 remaining proverbs.
-        3. You can use existing proverbs if one is relevant to the user's request, but you can also create new proverbs as required.
-        4. Be creative and helpful in generating complete, practical proverbs
-        5. After using the tool, provide a brief summary of what you create, removed, or changed        7.
+    CAPABILITIES:
+    1. List inbox emails using list_inbox
+    2. List sent emails using list_sent
+    3. Read a specific email using read_email (requires the email ID)
+    4. Send emails using send_email (requires to, subject, body)
+    5. Search emails using search_emails (supports Gmail search syntax)
 
-        Examples of when to use the set_proverbs tool:
-        - "Add a proverb about soap" → Use tool with an array containing the existing list of proverbs with the new proverb about soap at the end.
-        - "Remove the first proverb" → Use tool with an array containing the all of the existing proverbs except the first one"
-        - "Change any proverbs about cats to mention that they have 18 lives" → If no proverbs mention cats, do not use the tool. If one or more proverbs do mention cats, change them to mention cats having 18 lives, and use the tool with an array of all of the proverbs, including ones that were changed and ones that did not require changes.
-
-        Do your best to ensure proverbs plausibly make sense.
-
-
-        IMPORTANT RULES ABOUT WEATHER AND THE GET_WEATHER TOOL:
-        1. Only call the get_weather tool if the user asks you for the weather in a given location.
-        2. If the user does not specify a location, you can use the location "Everywhere ever in the whole wide world"
-
-        Examples of when to use the get_weather tool:
-        - "What's the weather today in Tokyo?" → Use the tool with the location "Tokyo"
-        - "Whats the weather right now" → Use the location "Everywhere ever in the whole wide world"
-        - Is it raining in London? → Use the tool with the location "London"
-        """,
-    tools=[set_proverbs, get_weather],
-    before_agent_callback=on_before_agent,
-    before_model_callback=before_model_modifier,
-    after_model_callback=simple_after_model_modifier,
+    RULES:
+    - If the user is not authenticated, tell them to click "Sign in with Google" first.
+    - When listing emails, provide a concise summary of the results.
+    - When the user wants to read an email, use read_email with the email ID.
+    - Before sending, confirm the recipient, subject, and body with the user.
+    - For search, use Gmail search syntax (from:, to:, subject:, is:unread, has:attachment, etc.)
+    - Be concise but include key information when summarizing.
+    - Match the user's tone when drafting emails; default to professional.
+    """,
+    tools=[list_inbox, list_sent, read_email, send_email, search_emails],
+    # before_agent_callback=on_before_agent,
+    # before_model_callback=before_model_modifier,
+    # after_model_callback=simple_after_model_modifier,
 )
 
-# Create ADK middleware agent instance
-adk_proverbs_agent = ADKAgent(
-    adk_agent=proverbs_agent,
+adk_email_agent = ADKAgent(
+    adk_agent=email_agent,
     user_id="demo_user",
     session_timeout_seconds=3600,
     use_in_memory_services=True,
 )
 
-# Create FastAPI app
-app = FastAPI(title="ADK Middleware Proverbs Agent")
+app = FastAPI(title="ADK Gmail Agent")
+app.include_router(router)
 
-# Add the ADK endpoint
-add_adk_fastapi_endpoint(app, adk_proverbs_agent, path="/")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+add_adk_fastapi_endpoint(app, adk_email_agent, path="/")
 
 if __name__ == "__main__":
-    import os
-
-    import uvicorn
-
-    if not os.getenv("GOOGLE_API_KEY"):
-        print("⚠️  Warning: GOOGLE_API_KEY environment variable not set!")
-        print("   Set it with: export GOOGLE_API_KEY='your-key-here'")
-        print("   Get a key from: https://makersuite.google.com/app/apikey")
-        print()
-
     port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)

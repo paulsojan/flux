@@ -1,0 +1,16 @@
+from typing import Dict
+from gmail_service import GmailService
+from google.adk.tools import ToolContext
+
+
+def search_emails(tool_context: ToolContext, query: str, max_results: int = 10) -> Dict:
+    """Search emails using Gmail search syntax (from:, subject:, is:unread, has:attachment, etc.)."""
+
+    gmail = GmailService.get_instance()
+    if not gmail.is_authenticated:
+        return {"status": "error", "message": "Not authenticated."}
+
+    emails = gmail.search_messages(query=query, max_results=max_results)
+    tool_context.state["emails"] = emails
+    tool_context.state["current_view"] = "inbox"
+    return {"status": "success", "count": len(emails), "query": query, "emails": emails}

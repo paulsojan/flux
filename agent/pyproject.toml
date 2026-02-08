@@ -1,7 +1,7 @@
 [project]
-name = "proverbs-agent"
+name = "ai-mail-agent"
 version = "0.1.0"
-description = "ADK Proverbs Agent with shared state"
+description = "ADK Gmail Agent with AI assistance"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi",
@@ -11,4 +11,7 @@ dependencies = [
     "google-adk",
     "google-genai",
     "ag-ui-adk",
+    "google-api-python-client",
+    "google-auth-httplib2",
+    "google-auth-oauthlib",
 ]
