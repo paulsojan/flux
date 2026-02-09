@@ -1,33 +1,57 @@
 "use client";
 
-type SidebarProps = {
-  currentView: string;
-  onNavigate: (view: "inbox" | "sent" | "compose") => void;
-};
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Inbox, Send, PenSquare } from "lucide-react";
 
-export function Sidebar({ currentView, onNavigate }: SidebarProps) {
-  const navItems = [
-    { id: "inbox" as const, label: "Inbox" },
-    { id: "sent" as const, label: "Sent" },
-    { id: "compose" as const, label: "Compose" },
-  ];
+export function Sidebar() {
+  const pathname = usePathname();
+
+  const isActive = (path: string) => {
+    if (path === "/inbox") {
+      return pathname === "/inbox" || pathname?.startsWith("/email/");
+    }
+    return pathname === path;
+  };
 
   return (
-    <nav className="w-56 shrink-0 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col p-4 gap-1">
-      <h2 className="text-lg font-semibold mb-4 px-3">AI Mail</h2>
-      {navItems.map((item) => (
-        <button
-          key={item.id}
-          onClick={() => onNavigate(item.id)}
-          className={`text-left px-3 py-2 rounded-lg transition-colors ${
-            currentView === item.id
-              ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 font-medium"
-              : "hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+    <div className="w-64 bg-gray-50 border-r border-gray-200 p-4">
+      <h1 className="text-xl font-bold mb-8 text-gray-800">Email Client</h1>
+      <nav className="space-y-2">
+        <Link
+          href="/inbox"
+          className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors ${
+            isActive("/inbox")
+              ? "bg-blue-100 text-blue-700"
+              : "text-gray-700 hover:bg-gray-100"
           }`}
         >
-          {item.label}
-        </button>
-      ))}
-    </nav>
+          <Inbox size={20} />
+          <span>Inbox</span>
+        </Link>
+        <Link
+          href="/sent"
+          className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors ${
+            isActive("/sent")
+              ? "bg-blue-100 text-blue-700"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          <Send size={20} />
+          <span>Sent</span>
+        </Link>
+        <Link
+          href="/compose"
+          className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors ${
+            isActive("/compose")
+              ? "bg-blue-100 text-blue-700"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          <PenSquare size={20} />
+          <span>Compose</span>
+        </Link>
+      </nav>
+    </div>
   );
 }

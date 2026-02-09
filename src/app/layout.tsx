@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 
-import { CopilotKit } from "@copilotkit/react-core";
 import "./globals.css";
 import "@copilotkit/react-ui/styles.css";
+
+import Providers from "./providers";
 
 export const metadata: Metadata = {
   title: "AI Mail",
@@ -17,9 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={"antialiased"}>
-        <CopilotKit runtimeUrl="/api/copilotkit" agent="my_agent">
-          {children}
-        </CopilotKit>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
