@@ -165,8 +165,8 @@ class GmailService:
 
         return {"id": sent["id"]}
 
-    def search_messages(self, query: str, max_results: int = 10) -> list[dict]:
-        return self.list_messages(query=query, max_results=max_results)
+    def search_messages(self, query: str, max_results: int = 10, label: str = "INBOX") -> list[dict]:
+        return self.list_messages(query=query, max_results=max_results, label=label)
 
     def get_profile(self) -> dict:
         self._require_auth()
