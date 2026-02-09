@@ -11,7 +11,7 @@ export default function InboxPage() {
   const emails = data?.emails ?? [];
 
   const handleSelectEmail = (emailId: string) =>
-    router.push(`/email/${emailId}`);
+    router.push(`/inbox/${emailId}`);
 
   if (isLoading) {
     return (

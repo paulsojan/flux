@@ -7,7 +7,7 @@ import { useFetchEmailApi } from "@/hooks/tanstack/useEmailsApi";
 import { useCoAgent } from "@copilotkit/react-core";
 import { AgentState } from "@/lib/types";
 
-export default function EmailDetailPage() {
+export default function InboxEmailDetailPage() {
   const router = useRouter();
 
   const params = useParams();

@@ -21,7 +21,10 @@ export function useAgentUiSync(state: AgentState | undefined) {
   const navigate = useCallback(
     (view: string, emailId?: string) => {
       if (view === "detail" && emailId) {
-        const target = `/email/${emailId}`;
+        const target = `/inbox/${emailId}`;
+        if (pathname !== target) router.push(target);
+      } else if (view === "sent_detail" && emailId) {
+        const target = `/sent/${emailId}`;
         if (pathname !== target) router.push(target);
       } else if (view in VIEW_TO_ROUTE) {
         const target = VIEW_TO_ROUTE[view];

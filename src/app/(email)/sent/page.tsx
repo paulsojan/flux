@@ -11,7 +11,7 @@ export default function SentPage() {
   const emails = data?.emails ?? [];
 
   const handleSelectEmail = (emailId: string) => {
-    router.push(`/email/${emailId}`);
+    router.push(`/sent/${emailId}`);
   };
 
   if (isLoading) {

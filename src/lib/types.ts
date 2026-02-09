@@ -24,5 +24,5 @@ export type AgentState = {
   emails: EmailSummary[];
   sent_emails: EmailSummary[];
   current_email: EmailDetail | null;
-  current_view: "inbox" | "sent" | "compose" | "detail";
+  current_view: "inbox" | "sent" | "compose" | "detail" | "sent_detail";
 };

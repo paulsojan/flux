@@ -8,8 +8,8 @@ export function Sidebar() {
   const pathname = usePathname();
 
   const isActive = (path: string) => {
-    if (path === "/inbox") {
-      return pathname === "/inbox" || pathname?.startsWith("/email/");
+    if (["/inbox", "/sent"].includes(path)) {
+      return pathname === path || pathname?.startsWith(`${path}/`);
     }
     return pathname === path;
   };
