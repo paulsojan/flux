@@ -11,6 +11,7 @@ export type EmailSummary = {
 export type EmailDetail = {
   id: string;
   threadId?: string;
+  messageId?: string;
   from: string;
   to: string;
   subject: string;
@@ -24,6 +25,4 @@ export type AgentState = {
   sent_emails: EmailSummary[];
   current_email: EmailDetail | null;
   current_view: "inbox" | "sent" | "compose" | "detail";
-  is_authenticated: boolean;
-  auth_url: string;
 };

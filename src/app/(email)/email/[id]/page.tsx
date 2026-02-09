@@ -1,8 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
 import { EmailDetailView } from "@/components/EmailDetail";
 import { useRouter, useParams } from "next/navigation";
 import { useFetchEmailApi } from "@/hooks/tanstack/useEmailsApi";
+import { useCoAgent } from "@copilotkit/react-core";
+import { AgentState } from "@/lib/types";
 
 export default function EmailDetailPage() {
   const router = useRouter();
@@ -11,6 +14,18 @@ export default function EmailDetailPage() {
   const emailId = params?.id as string;
 
   const { data: email, isLoading } = useFetchEmailApi(emailId);
+  const { setState } = useCoAgent<AgentState>({ name: "my_agent" });
+
+  useEffect(() => {
+    if (email) {
+      setState((prev) => ({
+        emails: prev?.emails ?? [],
+        sent_emails: prev?.sent_emails ?? [],
+        current_email: email,
+        current_view: "detail" as const,
+      }));
+    }
+  }, [email]);
 
   if (isLoading || !email) {
     return (

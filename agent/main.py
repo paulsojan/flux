@@ -18,6 +18,7 @@ from gmail_service import GmailService
 from tools.list_inbox import list_inbox
 from tools.list_sent import list_sent
 from tools.read_email import read_email
+from tools.reply_email import reply_email
 from tools.search_emails import search_emails
 from tools.send_email import send_email
 
@@ -95,17 +96,19 @@ email_agent = LlmAgent(
         3. Read a specific email using read_email (requires the email ID)
         4. Send emails using send_email (requires to, subject, body)
         5. Search emails using search_emails (supports Gmail search syntax)
+        6. Reply to the currently open email using reply_email (only requires the reply body text)
 
         RULES:
         - If the user is not authenticated, tell them to click "Sign in with Google" first.
         - When listing emails, provide a concise summary of the results.
         - When the user wants to read an email, use read_email with the email ID.
-        - Before sending, confirm the recipient, subject, and body with the user.
+        - Before sending a new email, confirm the recipient, subject, and body with the user.
+        - When the user asks to reply to an email, use the current_email from state to identify which email to reply to. Do not ask for the email ID.
         - For search, use Gmail search syntax (from:, to:, subject:, is:unread, has:attachment, etc.)
         - Be concise but include key information when summarizing.
         - Match the user's tone when drafting emails; default to professional.
     """,
-    tools=[list_inbox, list_sent, read_email, send_email, search_emails],
+    tools=[list_inbox, list_sent, read_email, send_email, reply_email, search_emails],
     # Uncomment callbacks when ready
     # before_agent_callback=on_before_agent,
     # before_model_callback=before_model_modifier,

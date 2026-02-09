@@ -102,6 +102,7 @@ class GmailService:
         return {
             "id": msg["id"],
             "threadId": msg.get("threadId"),
+            "messageId": headers.get("message-id", ""),
             "from": headers.get("from", ""),
             "to": headers.get("to", ""),
             "subject": headers.get("subject", "(no subject)"),
@@ -122,6 +123,43 @@ class GmailService:
             self.service.users()
             .messages()
             .send(userId="me", body={"raw": raw})
+            .execute()
+        )
+
+        return {"id": sent["id"]}
+
+    def reply_message(self, message_id: str, body: str) -> dict:
+        self._require_auth()
+
+        original = self.get_message(message_id)
+        thread_id = original.get("threadId")
+        original_message_id = original.get("messageId", "")
+        label_ids = original.get("labelIds", [])
+        if "SENT" in label_ids:
+            recipient = original.get("to", "")
+        else:
+            recipient = original.get("from", "")
+        subject = original.get("subject", "")
+
+        if not subject.lower().startswith("re:"):
+            subject = f"Re: {subject}"
+
+        msg = MIMEText(body)
+        msg["to"] = recipient
+        msg["subject"] = subject
+        if original_message_id:
+            msg["In-Reply-To"] = original_message_id
+            msg["References"] = original_message_id
+
+        raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
+        send_body: dict = {"raw": raw}
+        if thread_id:
+            send_body["threadId"] = thread_id
+
+        sent = (
+            self.service.users()
+            .messages()
+            .send(userId="me", body=send_body)
             .execute()
         )
 
