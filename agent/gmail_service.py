@@ -102,10 +102,10 @@ class GmailService:
         return {
             "id": msg["id"],
             "threadId": msg.get("threadId"),
-            "from": headers.get("From", ""),
-            "to": headers.get("To", ""),
-            "subject": headers.get("Subject", "(no subject)"),
-            "date": headers.get("Date", ""),
+            "from": headers.get("from", ""),
+            "to": headers.get("to", ""),
+            "subject": headers.get("subject", "(no subject)"),
+            "date": headers.get("date", ""),
             "body": self._extract_body(msg["payload"]),
             "labelIds": msg.get("labelIds", []),
         }
@@ -170,7 +170,8 @@ class GmailService:
 
     def _headers_dict(self, msg: dict) -> dict[str, str]:
         return {
-            h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])
+            h["name"].lower(): h["value"]
+            for h in msg.get("payload", {}).get("headers", [])
         }
 
     def _get_message_metadata(self, msg_id: str) -> dict:
@@ -191,21 +192,33 @@ class GmailService:
         return {
             "id": msg_id,
             "threadId": msg.get("threadId"),
-            "from": headers.get("From", ""),
-            "to": headers.get("To", ""),
-            "subject": headers.get("Subject", "(no subject)"),
-            "date": headers.get("Date", ""),
+            "from": headers.get("from", ""),
+            "to": headers.get("to", ""),
+            "subject": headers.get("subject", "(no subject)"),
+            "date": headers.get("date", ""),
             "snippet": msg.get("snippet", ""),
         }
 
     def _extract_body(self, payload: dict) -> str:
-        body = payload.get("body", {}).get("data")
-        if body:
-            return base64.urlsafe_b64decode(body).decode("utf-8", errors="replace")
+        def decode(data: str) -> str:
+            return base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
 
+        if data := payload.get("body", {}).get("data"):
+            if payload.get("mimeType", "") in ("text/plain", "text/html"):
+                return decode(data)
+
+        html, plain = "", ""
         for part in payload.get("parts", []):
-            text = self._extract_body(part)
-            if text:
-                return text
+            if part.get("mimeType", "").startswith("multipart/"):
+                if body := self._extract_body(part):
+                    return body
+            elif part.get("mimeType") == "text/html" and part.get("body", {}).get(
+                "data"
+            ):
+                html = decode(part["body"]["data"])
+            elif part.get("mimeType") == "text/plain" and part.get("body", {}).get(
+                "data"
+            ):
+                plain = decode(part["body"]["data"])
 
-        return ""
+        return html or plain

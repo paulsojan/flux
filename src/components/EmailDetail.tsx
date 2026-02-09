@@ -1,6 +1,7 @@
 "use client";
 
 import { EmailDetail as EmailDetailType } from "@/lib/types";
+import DOMPurify from "dompurify";
 
 type EmailDetailProps = {
   email: EmailDetailType;
@@ -19,15 +20,21 @@ export function EmailDetailView({ email, onBack }: EmailDetailProps) {
         </button>
       </div>
       <div className="px-6 py-4">
-        <h1 className="text-xl font-semibold mb-4">{email.subject}</h1>
+        <h1
+          className="text-xl font-semibold mb-4"
+          dangerouslySetInnerHTML={{
+            __html: DOMPurify.sanitize(email.subject),
+          }}
+        />
         <div className="flex items-baseline justify-between mb-1">
-          <span className="font-medium text-sm">{email.from}</span>
+          <span className="font-medium text-sm">From: {email.from}</span>
           <span className="text-xs text-gray-500">{email.date}</span>
         </div>
         <div className="text-xs text-gray-500 mb-6">To: {email.to}</div>
-        <div className="whitespace-pre-wrap text-sm leading-relaxed">
-          {email.body}
-        </div>
+        <div
+          className="text-sm leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(email.body) }}
+        />
       </div>
     </div>
   );
