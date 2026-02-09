@@ -130,6 +130,19 @@ class GmailService:
     def search_messages(self, query: str, max_results: int = 10) -> list[dict]:
         return self.list_messages(query=query, max_results=max_results)
 
+    def get_profile(self) -> dict:
+        self._require_auth()
+        return self.service.users().getProfile(userId="me").execute()
+
+    def list_history(
+        self, start_history_id: str, history_types: list[str] | None = None
+    ) -> dict:
+        self._require_auth()
+        kwargs: dict = {"userId": "me", "startHistoryId": start_history_id}
+        if history_types:
+            kwargs["historyTypes"] = history_types
+        return self.service.users().history().list(**kwargs).execute()
+
     def _build_service(self):
         if not self.creds:
             return None
