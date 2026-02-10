@@ -1,18 +1,21 @@
 "use client";
 
-import { EmailList } from "@/components/EmailList";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { EmailList } from "@/components/EmailList";
+import { Button } from "@/components/ui/button";
 import { useFetchSendEmailsApi } from "@/hooks/tanstack/useEmailsApi";
 
 export default function SentPage() {
   const router = useRouter();
 
-  const { data, isLoading } = useFetchSendEmailsApi();
-  const emails = data?.emails ?? [];
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useFetchSendEmailsApi();
 
-  const handleSelectEmail = (emailId: string) => {
-    router.push(`/sent/${emailId}`);
-  };
+  const allEmails = useMemo(
+    () => data?.pages.flatMap((p) => p.emails) ?? [],
+    [data?.pages],
+  );
 
   if (isLoading) {
     return (
@@ -23,11 +26,25 @@ export default function SentPage() {
   }
 
   return (
-    <EmailList
-      emails={emails}
-      title="Sent"
-      onSelectEmail={handleSelectEmail}
-      loading={isLoading}
-    />
+    <div className="flex flex-col w-full">
+      <EmailList
+        emails={allEmails}
+        title="Sent"
+        onSelectEmail={(emailId) => router.push(`/sent/${emailId}`)}
+        loading={isLoading}
+      />
+
+      {hasNextPage && (
+        <div className="mt-4 mb-5 flex justify-center">
+          <Button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            variant="outline"
+          >
+            {isFetchingNextPage ? "Loading..." : "Load More"}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

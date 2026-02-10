@@ -70,7 +70,8 @@ class GmailService:
         label: str = "INBOX",
         query: str = "",
         max_results: int = 20,
-    ) -> list[dict]:
+        page_token: str | None = None,
+    ) -> dict:
         self._require_auth()
 
         res = (
@@ -81,11 +82,17 @@ class GmailService:
                 labelIds=[label] if label else None,
                 q=query or None,
                 maxResults=max_results,
+                pageToken=page_token,
             )
             .execute()
         )
 
-        return [self._get_message_metadata(m["id"]) for m in res.get("messages", [])]
+        return {
+            "messages": [
+                self._get_message_metadata(m["id"]) for m in res.get("messages", [])
+            ],
+            "nextPageToken": res.get("nextPageToken"),
+        }
 
     def get_message(self, message_id: str) -> dict:
         self._require_auth()
@@ -157,15 +164,14 @@ class GmailService:
             send_body["threadId"] = thread_id
 
         sent = (
-            self.service.users()
-            .messages()
-            .send(userId="me", body=send_body)
-            .execute()
+            self.service.users().messages().send(userId="me", body=send_body).execute()
         )
 
         return {"id": sent["id"]}
 
-    def search_messages(self, query: str, max_results: int = 10, label: str = "INBOX") -> list[dict]:
+    def search_messages(
+        self, query: str, max_results: int = 20, label: str = "INBOX"
+    ) -> dict:
         return self.list_messages(query=query, max_results=max_results, label=label)
 
     def get_profile(self) -> dict:

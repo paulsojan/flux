@@ -46,12 +46,21 @@ export function useAgentUiSync(state: AgentState | undefined) {
     if (!state) return;
 
     if (state.emails?.length > 0) {
-      queryClient.setQueryData(["emails"], { emails: state.emails });
+      queryClient.setQueryData(["emails"], {
+        pages: [{ emails: state.emails, nextPageToken: state.next_page_token }],
+        pageParams: [""],
+      });
     }
 
     if (state.sent_emails?.length > 0) {
       queryClient.setQueryData(["send-emails"], {
-        emails: state.sent_emails,
+        pages: [
+          {
+            emails: state.sent_emails,
+            nextPageToken: state.next_page_token,
+          },
+        ],
+        pageParams: [""],
       });
     }
 

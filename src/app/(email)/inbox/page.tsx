@@ -1,32 +1,49 @@
 "use client";
 
-import { EmailList } from "@/components/EmailList";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { EmailList } from "@/components/EmailList";
+import { Button } from "@/components/ui/button";
 import { useFetchInboxEmailsApi } from "@/hooks/tanstack/useEmailsApi";
 
 export default function InboxPage() {
   const router = useRouter();
 
-  const { data, isLoading } = useFetchInboxEmailsApi();
-  const emails = data?.emails ?? [];
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useFetchInboxEmailsApi();
 
-  const handleSelectEmail = (emailId: string) =>
-    router.push(`/inbox/${emailId}`);
+  const allEmails = useMemo(
+    () => data?.pages.flatMap((p) => p.emails) ?? [],
+    [data?.pages],
+  );
 
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+        <p>Loading...</p>
       </div>
     );
   }
 
   return (
-    <EmailList
-      emails={emails}
-      title="Inbox"
-      onSelectEmail={handleSelectEmail}
-      loading={isLoading}
-    />
+    <div className="flex flex-col w-full">
+      <EmailList
+        emails={allEmails}
+        title="Inbox"
+        onSelectEmail={(id) => router.push(`/inbox/${id}`)}
+      />
+
+      {hasNextPage && (
+        <div className="mt-4 mb-5 flex justify-center">
+          <Button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            variant="outline"
+          >
+            {isFetchingNextPage ? "Loading..." : "Load More"}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

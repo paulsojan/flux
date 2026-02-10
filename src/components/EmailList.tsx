@@ -14,15 +14,27 @@ function formatDate(dateStr: string): string {
     const date = new Date(dateStr);
     const now = new Date();
     if (date.toDateString() === now.toDateString()) {
-      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     }
-    return date.toLocaleDateString([], { month: "short", day: "numeric" });
+    return date.toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   } catch {
     return dateStr;
   }
 }
 
-export function EmailList({ emails, title, onSelectEmail, loading }: EmailListProps) {
+export function EmailList({
+  emails,
+  title,
+  onSelectEmail,
+  loading,
+}: EmailListProps) {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="sticky top-0 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
@@ -52,7 +64,9 @@ export function EmailList({ emails, title, onSelectEmail, loading }: EmailListPr
                   {formatDate(email.date)}
                 </span>
               </div>
-              <div className="text-sm font-medium truncate">{email.subject}</div>
+              <div className="text-sm font-medium truncate">
+                {email.subject}
+              </div>
               <div className="text-xs text-gray-500 truncate mt-0.5">
                 {email.snippet}
               </div>

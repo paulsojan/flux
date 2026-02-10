@@ -12,13 +12,19 @@ def search_emails(
     if not gmail.is_authenticated:
         return {"status": "error", "message": "Not authenticated."}
 
-    emails = gmail.search_messages(query=query, max_results=max_results, label=label)
+    result = gmail.search_messages(query=query, max_results=max_results, label=label)
 
     if label == "SENT":
-        tool_context.state["sent_emails"] = emails
+        tool_context.state["sent_emails"] = result["messages"]
         tool_context.state["current_view"] = "sent"
     else:
-        tool_context.state["emails"] = emails
+        tool_context.state["emails"] = result["messages"]
         tool_context.state["current_view"] = "inbox"
 
-    return {"status": "success", "count": len(emails), "query": query, "emails": emails}
+    tool_context.state["next_page_token"] = result.get("nextPageToken")
+
+    return {
+        "status": "success",
+        "count": len(result["messages"]),
+        "emails": result["messages"],
+    }
