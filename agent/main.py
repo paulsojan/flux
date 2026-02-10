@@ -20,7 +20,6 @@ from tools.list_sent import list_sent
 from tools.read_email import read_email
 from tools.reply_email import reply_email
 from tools.search_emails import search_emails
-from tools.send_email import send_email
 
 load_dotenv()
 
@@ -94,7 +93,7 @@ email_agent = LlmAgent(
         1. List inbox emails using list_inbox
         2. List sent emails using list_sent
         3. Read a specific email using read_email (requires the email ID)
-        4. Send emails using send_email (requires to, subject, body)
+        4. Compose/send emails using compose_email (opens the compose form pre-filled with to, subject, body so the user can review and send from the UI)
         5. Search emails using search_emails (supports Gmail search syntax)
         6. Reply to the currently open email using reply_email (only requires the reply body text)
         7. Sync data to UI using sync_emails_to_ui (updates the displayed email list or detail)
@@ -103,7 +102,7 @@ email_agent = LlmAgent(
         - If the user is not authenticated, tell them to click "Sign in with Google" first.
         - When listing emails, provide a concise summary of the results.
         - When the user wants to read an email, use read_email with the email ID.
-        - Before sending a new email, confirm the recipient, subject, and body with the user.
+        - When the user wants to send a new email, ALWAYS use compose_email to open the compose form with pre-filled data. Never send emails directly without showing the compose UI first. This lets the user review and edit before sending.
         - When the user asks to reply to an email, use the current_email from state to identify which email to reply to. Do not ask for the email ID.
         - For search, use Gmail search syntax (from:, to:, subject:, is:unread, has:attachment, etc.)
         - Be concise but include key information when summarizing.
@@ -111,7 +110,7 @@ email_agent = LlmAgent(
         - Only call sync_emails_to_ui after search_emails (filtering). Use target "inbox" when searching inbox, or "sent" when searching sent. Always pass the same search query string you used with search_emails as the "query" parameter.
         - After calling read_email, use navigate_to to show the email detail view.
     """,
-    tools=[list_inbox, list_sent, read_email, send_email, reply_email, search_emails],
+    tools=[list_inbox, list_sent, read_email, reply_email, search_emails],
     before_agent_callback=on_before_agent,
     before_model_callback=before_model_modifier,
     after_model_callback=simple_after_model_modifier,

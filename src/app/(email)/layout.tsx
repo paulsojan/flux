@@ -28,7 +28,7 @@ export default function EmailLayout({
     },
   });
 
-  const { handleNavigateTo, handleRefreshEmails, handleSyncToUI } =
+  const { handleNavigateTo, handleRefreshEmails, handleSyncToUI, handleComposeEmail } =
     useAgentSync(state);
 
   useEmailStream();
@@ -83,6 +83,33 @@ export default function EmailLayout({
       },
     ],
     handler: handleSyncToUI,
+  });
+
+  useFrontendTool({
+    name: "compose_email",
+    description:
+      "Open the compose form pre-filled with email details. Use this when the user wants to send or draft an email.",
+    parameters: [
+      {
+        name: "to",
+        type: "string",
+        description: "Recipient email address",
+        required: true,
+      },
+      {
+        name: "subject",
+        type: "string",
+        description: "Email subject line",
+        required: true,
+      },
+      {
+        name: "body",
+        type: "string",
+        description: "Email body content",
+        required: true,
+      },
+    ],
+    handler: handleComposeEmail,
   });
 
   if (isLoading) {

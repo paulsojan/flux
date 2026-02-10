@@ -91,9 +91,24 @@ export function useAgentSync(state?: AgentState) {
     [queryClient],
   );
 
+  const handleComposeEmail = useCallback(
+    ({ to, subject, body }: { to: string; subject: string; body: string }) => {
+      const params = new URLSearchParams();
+      if (to) params.set("to", to);
+      if (subject) params.set("subject", subject);
+      if (body) params.set("body", body);
+
+      router.push(`/compose?${params.toString()}`);
+
+      return "Opened compose form with pre-filled data";
+    },
+    [router],
+  );
+
   return {
     handleNavigateTo,
     handleRefreshEmails,
     handleSyncToUI,
+    handleComposeEmail,
   };
 }
