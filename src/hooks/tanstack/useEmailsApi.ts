@@ -1,25 +1,26 @@
 import emailsApi from "@/app/api/emails";
 import { useQuery, useMutation, useInfiniteQuery } from "@tanstack/react-query";
 
-export const useFetchInboxEmailsApi = () =>
+export const useFetchInboxEmailsApi = (query: string = "") =>
   useInfiniteQuery({
-    queryKey: ["emails"],
-    queryFn: ({ pageParam }) => emailsApi.fetchInboxEmails({ pageParam }),
+    queryKey: ["emails", { query }],
+    queryFn: ({ pageParam }) =>
+      emailsApi.fetchInboxEmails({ pageParam, query }),
     initialPageParam: "",
     getNextPageParam: (lastPage) => lastPage.nextPageToken,
   });
 
-export const useFetchSendEmailsApi = () =>
+export const useFetchSendEmailsApi = (query: string = "") =>
   useInfiniteQuery({
-    queryKey: ["send-emails"],
-    queryFn: ({ pageParam }) => emailsApi.fetchSendEmails({ pageParam }),
+    queryKey: ["send-emails", { query }],
+    queryFn: ({ pageParam }) => emailsApi.fetchSendEmails({ pageParam, query }),
     initialPageParam: "",
     getNextPageParam: (lastPage) => lastPage.nextPageToken,
   });
 
 export const useFetchEmailApi = (emailId: string) =>
   useQuery({
-    queryKey: ["email", emailId],
+    queryKey: ["emails", emailId],
     queryFn: () => emailsApi.show(emailId),
   });
 

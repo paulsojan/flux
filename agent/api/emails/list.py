@@ -18,7 +18,7 @@ async def api_list_emails(
         return {"error": "Not authenticated", "emails": [], "nextPageToken": None}
 
     result = gmail.list_messages(
-        label=label, max_results=max_results, page_token=page_token
+        label=label, max_results=max_results, page_token=page_token, query=query
     )
     return {
         "emails": result["messages"],

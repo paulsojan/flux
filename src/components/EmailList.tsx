@@ -7,6 +7,7 @@ type EmailListProps = {
   title: string;
   onSelectEmail: (emailId: string) => void;
   loading?: boolean;
+  toolbar?: React.ReactNode;
 };
 
 function formatDate(dateStr: string): string {
@@ -34,12 +35,14 @@ export function EmailList({
   title,
   onSelectEmail,
   loading,
+  toolbar,
 }: EmailListProps) {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="sticky top-0 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <h1 className="text-xl font-semibold">{title}</h1>
       </div>
+      {toolbar}
       {loading ? (
         <div className="flex items-center justify-center h-64 text-gray-500">
           Loading emails...

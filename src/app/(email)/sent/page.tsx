@@ -1,29 +1,28 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { EmailList } from "@/components/EmailList";
+import { EmailFilterBar } from "@/components/EmailFilterBar";
 import { Button } from "@/components/ui/button";
 import { useFetchSendEmailsApi } from "@/hooks/tanstack/useEmailsApi";
+import { useEmailFilters } from "@/hooks/useEmailFilters";
 
 export default function SentPage() {
   const router = useRouter();
 
+  const searchParams = useSearchParams();
+  const query = searchParams.get("query") ?? "";
+
+  const { filters, clearFilters, updateFilter } = useEmailFilters();
+
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useFetchSendEmailsApi();
+    useFetchSendEmailsApi(query);
 
   const allEmails = useMemo(
     () => data?.pages.flatMap((p) => p.emails) ?? [],
     [data?.pages],
   );
-
-  if (isLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col w-full">
@@ -32,6 +31,15 @@ export default function SentPage() {
         title="Sent"
         onSelectEmail={(emailId) => router.push(`/sent/${emailId}`)}
         loading={isLoading}
+        toolbar={
+          <EmailFilterBar
+            filters={filters}
+            onUpdateFilter={updateFilter}
+            onClearFilters={clearFilters}
+            hasActiveFilters={!!query}
+            showReadStatus={false}
+          />
+        }
       />
 
       {hasNextPage && (

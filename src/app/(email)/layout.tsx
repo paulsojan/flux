@@ -7,7 +7,7 @@ import { useCoAgent, useFrontendTool } from "@copilotkit/react-core";
 import { CopilotSidebar } from "@copilotkit/react-ui";
 import { useFetchAuthStatusApi } from "@/hooks/tanstack/useAuthApi";
 import { SIDEBAR_CONFIG } from "@/app/constants";
-import { useAgentUiSync } from "@/hooks/useAgentSync";
+import { useAgentSync } from "@/hooks/useAgentSync";
 import { useEmailStream } from "@/hooks/useEmailStream";
 
 export default function EmailLayout({
@@ -28,7 +28,7 @@ export default function EmailLayout({
     },
   });
 
-  const { handleNavigateTo, handleRefreshEmails } = useAgentUiSync(state);
+  const { handleNavigateTo, handleRefreshEmails } = useAgentSync(state);
 
   useEmailStream();
 

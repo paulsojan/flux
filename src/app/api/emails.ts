@@ -1,20 +1,26 @@
-import type { EmailSummary, EmailDetail } from "@/lib/types";
+import type { EmailDetail } from "@/lib/types";
 import axios from "./axios";
 
-type EmailListResponse = {
-  emails: EmailSummary[];
-  nextPageToken?: string;
+const fetchInboxEmails = ({ pageParam = "", query = "" }) => {
+  const params = {
+    label: "INBOX",
+    max_results: "20",
+    page_token: pageParam,
+    query: query,
+  };
+
+  return axios.get("api/emails", { params });
 };
 
-const fetchInboxEmails = ({ pageParam = "" }) =>
-  axios.get(
-    `api/emails?label=INBOX&max_results=20&page_token=${pageParam}`,
-  ) as Promise<EmailListResponse>;
-
-const fetchSendEmails = ({ pageParam = "" }) =>
-  axios.get(
-    `api/emails?label=SENT&max_results=20&page_token=${pageParam}`,
-  ) as Promise<EmailListResponse>;
+const fetchSendEmails = ({ pageParam = "", query = "" }) => {
+  const params = {
+    label: "SENT",
+    max_results: "20",
+    page_token: pageParam,
+    query: query,
+  };
+  return axios.get("api/emails", { params });
+};
 
 const show = (emailId: string) =>
   axios.get(`api/emails/${emailId}`) as Promise<EmailDetail>;

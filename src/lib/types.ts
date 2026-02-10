@@ -20,6 +20,11 @@ export type EmailDetail = {
   labelIds?: string[];
 };
 
+export type EmailFilters = {
+  keyword: string;
+  readStatus: "all" | "read" | "unread";
+};
+
 export type AgentState = {
   emails: EmailSummary[];
   sent_emails: EmailSummary[];

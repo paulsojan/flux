@@ -11,28 +11,34 @@ const VIEW_TO_ROUTE: Record<string, string> = {
   compose: "/compose",
 };
 
-export function useAgentUiSync(state: AgentState | undefined) {
+function resolveRoute(view: string, emailId?: string): string | null {
+  if (view === "detail" && emailId) return `/inbox/${emailId}`;
+  if (view === "sent_detail" && emailId) return `/sent/${emailId}`;
+  return VIEW_TO_ROUTE[view] ?? null;
+}
+
+export function useAgentSync(state?: AgentState) {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
 
-  const prevViewRef = useRef(state?.current_view);
+  const prevViewRef = useRef<string | undefined>(state?.current_view);
 
   const navigate = useCallback(
     (view: string, emailId?: string) => {
-      if (view === "detail" && emailId) {
-        const target = `/inbox/${emailId}`;
-        if (pathname !== target) router.push(target);
-      } else if (view === "sent_detail" && emailId) {
-        const target = `/sent/${emailId}`;
-        if (pathname !== target) router.push(target);
-      } else if (view in VIEW_TO_ROUTE) {
-        const target = VIEW_TO_ROUTE[view];
-        if (pathname !== target) router.push(target);
+      const target = resolveRoute(view, emailId);
+      if (!target) return;
+
+      const current = window.location.pathname + window.location.search;
+
+      if (current !== target) {
+        router.push(target);
       }
     },
-    [pathname, router],
+    [router],
   );
+
+  // agent-driven navigation
 
   useEffect(() => {
     const view = state?.current_view;
@@ -42,18 +48,32 @@ export function useAgentUiSync(state: AgentState | undefined) {
     navigate(view, state?.current_email?.id);
   }, [state?.current_view, state?.current_email?.id, navigate]);
 
+  // Sync agent data into React Query cache
   useEffect(() => {
     if (!state) return;
 
-    if (state.emails?.length > 0) {
-      queryClient.setQueryData(["emails"], {
-        pages: [{ emails: state.emails, nextPageToken: state.next_page_token }],
+    const clearFiltersIfNeeded = (route: string) => {
+      if (pathname === route && window.location.search) {
+        window.dispatchEvent(new CustomEvent("agent:clear-filters"));
+        router.replace(route);
+      }
+    };
+
+    if (state.emails?.length) {
+      queryClient.setQueryData(["emails", { query: "" }], {
+        pages: [
+          {
+            emails: state.emails,
+            nextPageToken: state.next_page_token,
+          },
+        ],
         pageParams: [""],
       });
+      clearFiltersIfNeeded("/inbox");
     }
 
-    if (state.sent_emails?.length > 0) {
-      queryClient.setQueryData(["send-emails"], {
+    if (state.sent_emails?.length) {
+      queryClient.setQueryData(["send-emails", { query: "" }], {
         pages: [
           {
             emails: state.sent_emails,
@@ -62,6 +82,7 @@ export function useAgentUiSync(state: AgentState | undefined) {
         ],
         pageParams: [""],
       });
+      clearFiltersIfNeeded("/sent");
     }
 
     if (state.current_email?.id) {
@@ -70,7 +91,7 @@ export function useAgentUiSync(state: AgentState | undefined) {
         state.current_email,
       );
     }
-  }, [state?.emails, state?.sent_emails, state?.current_email, queryClient]);
+  }, [pathname, queryClient, router, state]);
 
   const handleNavigateTo = useCallback(
     async ({ view }: { view: string }) => {
@@ -81,7 +102,7 @@ export function useAgentUiSync(state: AgentState | undefined) {
   );
 
   const handleRefreshEmails = useCallback(
-    async ({ list }: { list: string }) => {
+    async ({ list }: { list: "inbox" | "sent" }) => {
       const queryKey = list === "inbox" ? ["emails"] : ["send-emails"];
       await queryClient.invalidateQueries({ queryKey });
       return `Refreshed ${list} emails`;

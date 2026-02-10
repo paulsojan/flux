@@ -109,10 +109,9 @@ email_agent = LlmAgent(
         - Match the user's tone when drafting emails; default to professional.
     """,
     tools=[list_inbox, list_sent, read_email, send_email, reply_email, search_emails],
-    # Uncomment callbacks when ready
-    # before_agent_callback=on_before_agent,
-    # before_model_callback=before_model_modifier,
-    # after_model_callback=simple_after_model_modifier,
+    before_agent_callback=on_before_agent,
+    before_model_callback=before_model_modifier,
+    after_model_callback=simple_after_model_modifier,
 )
 
 adk_email_agent = ADKAgent(
