@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { EmailFilters } from "@/lib/types";
 import { buildGmailQuery } from "@/lib/gmail-query";
@@ -16,15 +16,17 @@ export function useEmailFilters() {
 
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [debouncedFilters, setDebouncedFilters] = useState(INITIAL_FILTERS);
+  const [prevUrlQuery, setPrevUrlQuery] = useState("");
 
-  useEffect(() => {
-    const handler = () => {
-      setFilters(INITIAL_FILTERS);
-      setDebouncedFilters(INITIAL_FILTERS);
-    };
-    window.addEventListener("agent:clear-filters", handler);
-    return () => window.removeEventListener("agent:clear-filters", handler);
-  }, []);
+  const urlQuery = searchParams.get("query") ?? "";
+  if (urlQuery !== prevUrlQuery) {
+    setPrevUrlQuery(urlQuery);
+    const ownQuery = buildGmailQuery(filters);
+    if (urlQuery && urlQuery !== ownQuery) {
+      setFilters((prev) => ({ ...prev, keyword: urlQuery }));
+      setDebouncedFilters((prev) => ({ ...prev, keyword: urlQuery }));
+    }
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -39,18 +41,21 @@ export function useEmailFilters() {
     [debouncedFilters],
   );
 
+  const hadOwnQueryRef = useRef(false);
+
   useEffect(() => {
     const currentQ = searchParams.get("query") ?? "";
 
-    if (!gmailQuery && currentQ) {
+    if (gmailQuery) {
+      hadOwnQueryRef.current = true;
+      if (gmailQuery !== currentQ) {
+        router.replace(`?query=${encodeURIComponent(gmailQuery)}`, {
+          scroll: false,
+        });
+      }
+    } else if (hadOwnQueryRef.current && currentQ) {
+      hadOwnQueryRef.current = false;
       router.replace("?");
-      return;
-    }
-
-    if (gmailQuery && gmailQuery !== currentQ) {
-      router.replace(`?query=${encodeURIComponent(gmailQuery)}`, {
-        scroll: false,
-      });
     }
   }, [gmailQuery, router, searchParams]);
 

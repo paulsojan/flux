@@ -97,6 +97,7 @@ email_agent = LlmAgent(
         4. Send emails using send_email (requires to, subject, body)
         5. Search emails using search_emails (supports Gmail search syntax)
         6. Reply to the currently open email using reply_email (only requires the reply body text)
+        7. Sync data to UI using sync_emails_to_ui (updates the displayed email list or detail)
 
         RULES:
         - If the user is not authenticated, tell them to click "Sign in with Google" first.
@@ -107,6 +108,8 @@ email_agent = LlmAgent(
         - For search, use Gmail search syntax (from:, to:, subject:, is:unread, has:attachment, etc.)
         - Be concise but include key information when summarizing.
         - Match the user's tone when drafting emails; default to professional.
+        - Only call sync_emails_to_ui after search_emails (filtering). Use target "inbox" when searching inbox, or "sent" when searching sent. Always pass the same search query string you used with search_emails as the "query" parameter.
+        - After calling read_email, use navigate_to to show the email detail view.
     """,
     tools=[list_inbox, list_sent, read_email, send_email, reply_email, search_emails],
     before_agent_callback=on_before_agent,

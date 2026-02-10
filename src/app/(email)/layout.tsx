@@ -28,7 +28,8 @@ export default function EmailLayout({
     },
   });
 
-  const { handleNavigateTo, handleRefreshEmails } = useAgentSync(state);
+  const { handleNavigateTo, handleRefreshEmails, handleSyncToUI } =
+    useAgentSync(state);
 
   useEmailStream();
 
@@ -59,6 +60,29 @@ export default function EmailLayout({
       },
     ],
     handler: handleRefreshEmails,
+  });
+
+  useFrontendTool({
+    name: "sync_emails_to_ui",
+    description:
+      "Sync filtered/searched email data to the UI. Only call this after search_emails to update the displayed data with filtered results. Do NOT call this after list_inbox, list_sent, or read_email. You MUST pass the same search query you used with search_emails.",
+    parameters: [
+      {
+        name: "target",
+        type: "string",
+        description:
+          "What to sync: 'inbox' (after search_emails for inbox), 'sent' (after search_emails for sent), or 'email_detail' (after read_email)",
+        required: true,
+      },
+      {
+        name: "query",
+        type: "string",
+        description:
+          "The Gmail search query used with search_emails (e.g. 'from:john subject:meeting'). Required for inbox/sent targets.",
+        required: true,
+      },
+    ],
+    handler: handleSyncToUI,
   });
 
   if (isLoading) {

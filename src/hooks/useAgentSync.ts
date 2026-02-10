@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AgentState } from "@/lib/types";
 
@@ -19,9 +19,9 @@ function resolveRoute(view: string, emailId?: string): string | null {
 
 export function useAgentSync(state?: AgentState) {
   const router = useRouter();
-  const pathname = usePathname();
   const queryClient = useQueryClient();
 
+  const stateRef = useRef(state);
   const prevViewRef = useRef<string | undefined>(state?.current_view);
 
   const navigate = useCallback(
@@ -39,7 +39,6 @@ export function useAgentSync(state?: AgentState) {
   );
 
   // agent-driven navigation
-
   useEffect(() => {
     const view = state?.current_view;
     if (!view || view === prevViewRef.current) return;
@@ -48,50 +47,32 @@ export function useAgentSync(state?: AgentState) {
     navigate(view, state?.current_email?.id);
   }, [state?.current_view, state?.current_email?.id, navigate]);
 
-  // Sync agent data into React Query cache
-  useEffect(() => {
-    if (!state) return;
+  const handleSyncToUI = useCallback(
+    async ({ target, query }: { target: string; query?: string }) => {
+      const currentState = stateRef.current;
+      if (!currentState) return "No state available";
 
-    const clearFiltersIfNeeded = (route: string) => {
-      if (pathname === route && window.location.search) {
-        window.dispatchEvent(new CustomEvent("agent:clear-filters"));
+      if (target === "inbox" && query) {
+        const route = `/inbox?query=${encodeURIComponent(query)}`;
         router.replace(route);
       }
-    };
 
-    if (state.emails?.length) {
-      queryClient.setQueryData(["emails", { query: "" }], {
-        pages: [
-          {
-            emails: state.emails,
-            nextPageToken: state.next_page_token,
-          },
-        ],
-        pageParams: [""],
-      });
-      clearFiltersIfNeeded("/inbox");
-    }
+      if (target === "sent" && query) {
+        const route = `/sent?query=${encodeURIComponent(query)}`;
+        router.replace(route);
+      }
 
-    if (state.sent_emails?.length) {
-      queryClient.setQueryData(["send-emails", { query: "" }], {
-        pages: [
-          {
-            emails: state.sent_emails,
-            nextPageToken: state.next_page_token,
-          },
-        ],
-        pageParams: [""],
-      });
-      clearFiltersIfNeeded("/sent");
-    }
+      if (target === "email_detail" && currentState.current_email?.id) {
+        queryClient.setQueryData(
+          ["email", currentState.current_email.id],
+          currentState.current_email,
+        );
+      }
 
-    if (state.current_email?.id) {
-      queryClient.setQueryData(
-        ["email", state.current_email.id],
-        state.current_email,
-      );
-    }
-  }, [pathname, queryClient, router, state]);
+      return `Synced ${target} to UI`;
+    },
+    [queryClient, router],
+  );
 
   const handleNavigateTo = useCallback(
     async ({ view }: { view: string }) => {
@@ -113,5 +94,6 @@ export function useAgentSync(state?: AgentState) {
   return {
     handleNavigateTo,
     handleRefreshEmails,
+    handleSyncToUI,
   };
 }
