@@ -2,6 +2,8 @@
 
 import { EmailDetail as EmailDetailType } from "@/lib/types";
 import DOMPurify from "dompurify";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 type EmailDetailProps = {
   email: EmailDetailType;
@@ -11,29 +13,43 @@ type EmailDetailProps = {
 export function EmailDetailView({ email, onBack }: EmailDetailProps) {
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="sticky top-0 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
-        <button
+      <div className="sticky top-0 bg-background border-b px-6 py-3">
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={onBack}
-          className="text-sm text-blue-600 hover:text-blue-800"
+          className="px-4 cursor-pointer"
         >
-          &larr; Back
-        </button>
+          ← Back
+        </Button>
       </div>
-      <div className="px-6 py-4">
+
+      <div className="px-6 py-6 space-y-6">
         <h1
-          className="text-xl font-semibold mb-4"
+          className="text-2xl font-semibold"
           dangerouslySetInnerHTML={{
             __html: DOMPurify.sanitize(email.subject),
           }}
         />
-        <div className="flex items-baseline justify-between mb-1">
-          <span className="font-medium text-sm">From: {email.from}</span>
-          <span className="text-xs text-gray-500">{email.date}</span>
+
+        <div className="space-y-2 text-sm">
+          <div className="flex items-baseline justify-between">
+            <span className="font-medium">
+              From: <span className="font-normal">{email.from}</span>
+            </span>
+            <span className="text-muted-foreground text-xs">{email.date}</span>
+          </div>
+
+          <div className="text-muted-foreground text-xs">To: {email.to}</div>
         </div>
-        <div className="text-xs text-gray-500 mb-6">To: {email.to}</div>
+
+        <Separator />
+
         <div
-          className="text-sm leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(email.body) }}
+          className="text-sm leading-relaxed prose dark:prose-invert max-w-none"
+          dangerouslySetInnerHTML={{
+            __html: DOMPurify.sanitize(email.body),
+          }}
         />
       </div>
     </div>

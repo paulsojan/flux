@@ -2,6 +2,10 @@
 
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
 type ComposeEmailProps = {
   onSend: (to: string, subject: string, body: string) => Promise<void>;
@@ -39,58 +43,61 @@ export function ComposeEmail({ onSend, onCancel }: ComposeEmailProps) {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="sticky top-0 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="sticky top-0 bg-background border-b px-6 py-4">
         <h1 className="text-xl font-semibold">New Message</h1>
       </div>
-      <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">To</label>
-          <input
+
+      <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="to">To</Label>
+          <Input
+            id="to"
             type="email"
+            placeholder="recipient@example.com"
             value={email.to}
             onChange={(e) => setEmail({ ...email, to: e.target.value })}
-            placeholder="recipient@example.com"
-            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Subject</label>
-          <input
+
+        <div className="space-y-2">
+          <Label htmlFor="subject">Subject</Label>
+          <Input
+            id="subject"
             type="text"
+            placeholder="Subject"
             value={email.subject}
             onChange={(e) => setEmail({ ...email, subject: e.target.value })}
-            placeholder="Subject"
-            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
-        <div className="flex-1">
-          <label className="block text-sm font-medium mb-1">Message</label>
-          <textarea
-            value={email.body}
-            onChange={(e) => setEmail({ ...email, body: e.target.value })}
+
+        <div className="space-y-2 flex-1">
+          <Label htmlFor="body">Message</Label>
+          <Textarea
+            id="body"
             placeholder="Write your message..."
             rows={12}
-            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            value={email.body}
+            onChange={(e) => setEmail({ ...email, body: e.target.value })}
             required
+            className="resize-none"
           />
         </div>
+
         <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={sending}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
+          <Button type="submit" className="cursor-pointer" disabled={sending}>
             {sending ? "Sending..." : "Send"}
-          </button>
-          <button
+          </Button>
+
+          <Button
             type="button"
+            className="cursor-pointer"
+            variant="secondary"
             onClick={onCancel}
-            className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-6 py-2 rounded-lg text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </div>

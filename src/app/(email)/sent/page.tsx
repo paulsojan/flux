@@ -48,6 +48,7 @@ export default function SentPage() {
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
             variant="outline"
+            className="cursor-pointer"
           >
             {isFetchingNextPage ? "Loading..." : "Load More"}
           </Button>

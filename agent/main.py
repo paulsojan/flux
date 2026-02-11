@@ -123,7 +123,7 @@ adk_email_agent = ADKAgent(
     use_in_memory_services=True,
 )
 
-app = FastAPI(title="ADK Gmail Agent")
+app = FastAPI(title="AI Mail Agent")
 app.include_router(router)
 
 app.add_middleware(

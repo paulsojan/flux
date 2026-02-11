@@ -46,6 +46,7 @@ export default function InboxPage() {
           <Button
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
+            className="cursor-pointer"
             variant="outline"
           >
             {isFetchingNextPage ? "Loading..." : "Load More"}

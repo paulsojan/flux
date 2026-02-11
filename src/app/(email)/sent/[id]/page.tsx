@@ -14,7 +14,7 @@ export default function SentEmailDetailPage() {
   const emailId = params?.id as string;
 
   const { data: email, isLoading } = useFetchEmailApi(emailId);
-  const { setState } = useCoAgent<AgentState>({ name: "my_agent" });
+  const { setState } = useCoAgent<AgentState>({ name: "ai_mail_agent" });
 
   useEffect(() => {
     if (email) {

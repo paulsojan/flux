@@ -40,7 +40,7 @@ export function EmailFilterBar({
             placeholder="Search emails..."
             value={filters.keyword}
             onChange={(e) => onUpdateFilter("keyword", e.target.value)}
-            className="pl-8 h-9"
+            className="pl-8 h-9 cursor-pointer"
           />
         </div>
 
@@ -51,7 +51,7 @@ export function EmailFilterBar({
               onUpdateFilter("readStatus", value as EmailFilters["readStatus"])
             }
           >
-            <SelectTrigger className="w-32.5 h-9">
+            <SelectTrigger className="w-32.5 h-9 cursor-pointer">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -62,9 +62,13 @@ export function EmailFilterBar({
           </Select>
         )}
 
-        {/* Clear filters */}
         {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={onClearFilters}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="cursor-pointer"
+            onClick={onClearFilters}
+          >
             <X className="mr-1 h-4 w-4" />
             Clear
           </Button>

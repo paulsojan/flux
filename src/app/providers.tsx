@@ -8,7 +8,7 @@ import { queryClient } from "@/utils/queryClient";
 export default function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <CopilotKit runtimeUrl="/api/copilotkit" agent="my_agent">
+      <CopilotKit runtimeUrl="/api/copilotkit" agent="ai_mail_agent">
         {children}
       </CopilotKit>
     </QueryClientProvider>

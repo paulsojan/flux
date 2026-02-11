@@ -1,6 +1,9 @@
 "use client";
 
 import { EmailSummary } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type EmailListProps = {
   emails: EmailSummary[];
@@ -39,41 +42,58 @@ export function EmailList({
 }: EmailListProps) {
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="sticky top-0 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="sticky top-0 bg-background border-b px-6 py-4">
         <h1 className="text-xl font-semibold">{title}</h1>
       </div>
+
       {toolbar}
+
       {loading ? (
-        <div className="flex items-center justify-center h-64 text-gray-500">
-          Loading emails...
+        <div className="p-6 space-y-4">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-3 w-full" />
+              {i !== 4 && <Separator />}
+            </div>
+          ))}
         </div>
       ) : emails.length === 0 ? (
-        <div className="flex items-center justify-center h-64 text-gray-500">
+        <div className="flex items-center justify-center h-64 text-muted-foreground">
           No emails to display.
         </div>
       ) : (
-        <div className="divide-y divide-gray-100 dark:divide-gray-800">
-          {emails.map((email) => (
-            <button
-              key={email.id}
-              onClick={() => onSelectEmail(email.id)}
-              className="w-full text-left px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
-            >
-              <div className="flex items-baseline justify-between mb-1">
-                <span className="font-medium text-sm truncate max-w-xs">
-                  {email.from}
-                </span>
-                <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">
-                  {formatDate(email.date)}
-                </span>
-              </div>
-              <div className="text-sm font-medium truncate">
-                {email.subject}
-              </div>
-              <div className="text-xs text-gray-500 truncate mt-0.5">
-                {email.snippet}
-              </div>
-            </button>
+        <div>
+          {emails.map((email, index) => (
+            <div key={email.id}>
+              <Button
+                variant="ghost"
+                onClick={() => onSelectEmail(email.id)}
+                className="w-full justify-start px-6 py-4 h-auto rounded-none cursor-pointer"
+              >
+                <div className="w-full text-left space-y-1">
+                  <div className="flex items-baseline justify-between">
+                    <span className="font-medium text-sm truncate max-w-xs">
+                      {email.from}
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">
+                      {formatDate(email.date)}
+                    </span>
+                  </div>
+
+                  <div className="text-sm font-medium truncate">
+                    {email.subject}
+                  </div>
+
+                  <div className="text-xs text-muted-foreground truncate">
+                    {email.snippet}
+                  </div>
+                </div>
+              </Button>
+
+              {index !== emails.length - 1 && <Separator />}
+            </div>
           ))}
         </div>
       )}
