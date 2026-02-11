@@ -45,11 +45,11 @@ export function EmailDetailView({ email, onBack }: EmailDetailProps) {
 
         <Separator />
 
-        <div
-          className="text-sm leading-relaxed prose dark:prose-invert max-w-none"
-          dangerouslySetInnerHTML={{
-            __html: DOMPurify.sanitize(email.body),
-          }}
+        <iframe
+          title="email-body"
+          className="w-full h-[75vh] border rounded-md"
+          sandbox="allow-popups allow-popups-to-escape-sandbox"
+          srcDoc={DOMPurify.sanitize(email.body)}
         />
       </div>
     </div>

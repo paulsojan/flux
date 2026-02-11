@@ -14,7 +14,6 @@ from google.adk.models.llm_response import LlmResponse
 from google.genai import types
 
 from api import router
-from gmail_service import GmailService
 from tools.list_inbox import list_inbox
 from tools.list_sent import list_sent
 from tools.read_email import read_email
@@ -24,62 +23,24 @@ from tools.search_emails import search_emails
 load_dotenv()
 
 
-def on_before_agent(callback_context: CallbackContext):
-    gmail = GmailService.get_instance()
-    state = callback_context.state
-
-    state.setdefault("emails", [])
-    state.setdefault("sent_emails", [])
-    state.setdefault("current_email", None)
-    state.setdefault("current_view", "inbox")
-
-    state["is_authenticated"] = gmail.is_authenticated
-    state["auth_url"] = (
-        "" if gmail.is_authenticated else gmail.get_auth_url(silent_fail=True)
-    )
-    return None
-
-
-def before_model_modifier(
+def inject_current_email(
     callback_context: CallbackContext, llm_request: LlmRequest
 ) -> LlmResponse | None:
-    if callback_context.agent_name != "EmailAgent":
-        return None
-
-    state = callback_context.state
-    context_summary = f"""
-        Current state:
-        - Authenticated: {state.get("is_authenticated", False)}
-        - Current view: {state.get("current_view", "inbox")}
-        - Emails loaded: {len(state.get("emails", []))}
-    """
-
-    original_instruction = llm_request.config.system_instruction
-    if not isinstance(original_instruction, types.Content):
-        original_instruction = types.Content(
-            role="system", parts=[types.Part(text=str(original_instruction) or "")]
+    """Inject the currently open email into the LLM context so it can answer
+    questions about it (summarize, from/to, etc.) without needing a tool call."""
+    current_email = callback_context.state.get("current_email")
+    if current_email:
+        email_context = (
+            f"\n\n--- CURRENTLY OPEN EMAIL ---\n"
+            f"ID: {current_email.get('id', 'N/A')}\n"
+            f"From: {current_email.get('from', 'N/A')}\n"
+            f"To: {current_email.get('to', 'N/A')}\n"
+            f"Subject: {current_email.get('subject', 'N/A')}\n"
+            f"Date: {current_email.get('date', 'N/A')}\n"
+            f"Body:\n{current_email.get('body', '(empty)')}\n"
         )
-
-    if original_instruction.parts:
-        original_instruction.parts[0].text = context_summary + (
-            original_instruction.parts[0].text or ""
-        )
-    llm_request.config.system_instruction = original_instruction
-    return None
-
-
-def simple_after_model_modifier(
-    callback_context: CallbackContext, llm_response: LlmResponse
-) -> LlmResponse | None:
-    if callback_context.agent_name == "EmailAgent":
-        content = llm_response.content
-        if (
-            content
-            and content.parts
-            and content.role == "model"
-            and content.parts[0].text
-        ):
-            callback_context._invocation_context.end_invocation = True
+        existing = llm_request.config.system_instruction or ""
+        llm_request.config.system_instruction = existing + email_context
     return None
 
 
@@ -100,6 +61,7 @@ email_agent = LlmAgent(
 
         RULES:
         - If the user is not authenticated, tell them to click "Sign in with Google" first.
+        - When the user is viewing an email, its full content (from, to, subject, date, body) is provided to you automatically in the system context under "CURRENTLY OPEN EMAIL". Use this to answer any questions about the email (summarize, who sent it, who it's to, what it says, etc.) WITHOUT calling read_email again.
         - When listing emails, provide a concise summary of the results.
         - When the user wants to read an email, use read_email with the email ID.
         - When the user wants to send a new email, ALWAYS use compose_email to open the compose form with pre-filled data. Never send emails directly without showing the compose UI first. This lets the user review and edit before sending.
@@ -111,9 +73,7 @@ email_agent = LlmAgent(
         - After calling read_email, use navigate_to to show the email detail view.
     """,
     tools=[list_inbox, list_sent, read_email, reply_email, search_emails],
-    # before_agent_callback=on_before_agent,
-    # before_model_callback=before_model_modifier,
-    # after_model_callback=simple_after_model_modifier,
+    before_model_callback=inject_current_email,
 )
 
 adk_email_agent = ADKAgent(
