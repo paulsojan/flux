@@ -11,7 +11,6 @@ from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
-from google.genai import types
 
 from api import router
 from tools.list_inbox import list_inbox

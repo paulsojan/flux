@@ -16,7 +16,7 @@ export function Sidebar() {
 
   return (
     <div className="w-64 bg-gray-50 border-r border-gray-200 p-4">
-      <h1 className="text-xl font-bold mb-8 text-gray-800">Email Client</h1>
+      <h1 className="text-xl font-bold mb-8 text-gray-800">AI Email Client</h1>
       <nav className="space-y-2">
         <Link
           href="/inbox"

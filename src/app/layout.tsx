@@ -6,7 +6,7 @@ import "@copilotkit/react-ui/styles.css";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "AI Mail",
+  title: "AI Email Client",
   description: "Gmail client with AI assistance",
 };
 
