@@ -6,15 +6,12 @@ import { EmailList } from "@/components/EmailList";
 import { EmailFilterBar } from "@/components/EmailFilterBar";
 import { Button } from "@/components/ui/button";
 import { useFetchSendEmailsApi } from "@/hooks/tanstack/useEmailsApi";
-import { useEmailFilters } from "@/hooks/useEmailFilters";
 
 export default function SentPage() {
   const router = useRouter();
 
   const searchParams = useSearchParams();
   const query = searchParams.get("query") ?? "";
-
-  const { filters, clearFilters, updateFilter } = useEmailFilters();
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useFetchSendEmailsApi(query);
@@ -32,13 +29,7 @@ export default function SentPage() {
         onSelectEmail={(emailId) => router.push(`/sent/${emailId}`)}
         loading={isLoading}
         toolbar={
-          <EmailFilterBar
-            filters={filters}
-            onUpdateFilter={updateFilter}
-            onClearFilters={clearFilters}
-            hasActiveFilters={!!query}
-            showReadStatus={false}
-          />
+          <EmailFilterBar hasActiveFilters={!!query} showReadStatus={false} />
         }
       />
 

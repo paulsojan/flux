@@ -47,9 +47,9 @@ export function useAgentSync() {
   );
 
   const handleRefreshEmails = useCallback(
-    async ({ list }: { list: "inbox" | "sent" }) => {
+    ({ list }: { list: "inbox" | "sent" }) => {
       const queryKey = list === "inbox" ? ["emails"] : ["send-emails"];
-      await queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey });
       return `Refreshed ${list} emails`;
     },
     [queryClient],

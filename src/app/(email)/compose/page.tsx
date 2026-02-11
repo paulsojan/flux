@@ -9,7 +9,7 @@ export default function ComposePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { mutateAsync: createEmail } = useCreateEmailApi();
+  const { mutateAsync: createEmail, isPending } = useCreateEmailApi();
 
   const handleSend = (to: string, subject: string, body: string) => {
     const payload = { to, subject, body };
@@ -26,5 +26,11 @@ export default function ComposePage() {
     router.push("/inbox");
   };
 
-  return <ComposeEmail onSend={handleSend} onCancel={handleCancel} />;
+  return (
+    <ComposeEmail
+      onSend={handleSend}
+      onCancel={handleCancel}
+      isPending={isPending}
+    />
+  );
 }

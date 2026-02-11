@@ -12,25 +12,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, X } from "lucide-react";
+import { useEmailFilters } from "@/hooks/useEmailFilters";
 
 type EmailFilterBarProps = {
-  filters: EmailFilters;
-  onUpdateFilter: <K extends keyof EmailFilters>(
-    key: K,
-    value: EmailFilters[K],
-  ) => void;
-  onClearFilters: () => void;
   hasActiveFilters: boolean;
   showReadStatus?: boolean;
 };
 
 export function EmailFilterBar({
-  filters,
-  onUpdateFilter,
-  onClearFilters,
   hasActiveFilters,
   showReadStatus = true,
 }: EmailFilterBarProps) {
+  const { filters, clearFilters, updateFilter } = useEmailFilters();
+
   return (
     <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-3">
       <div className="flex flex-wrap items-center gap-3">
@@ -39,7 +33,7 @@ export function EmailFilterBar({
           <Input
             placeholder="Search emails..."
             value={filters.keyword}
-            onChange={(e) => onUpdateFilter("keyword", e.target.value)}
+            onChange={(e) => updateFilter("keyword", e.target.value)}
             className="pl-8 h-9 cursor-pointer"
           />
         </div>
@@ -48,7 +42,7 @@ export function EmailFilterBar({
           <Select
             value={filters.readStatus}
             onValueChange={(value) =>
-              onUpdateFilter("readStatus", value as EmailFilters["readStatus"])
+              updateFilter("readStatus", value as EmailFilters["readStatus"])
             }
           >
             <SelectTrigger className="w-32.5 h-9 cursor-pointer">
@@ -67,7 +61,7 @@ export function EmailFilterBar({
             variant="ghost"
             size="sm"
             className="cursor-pointer"
-            onClick={onClearFilters}
+            onClick={clearFilters}
           >
             <X className="mr-1 h-4 w-4" />
             Clear

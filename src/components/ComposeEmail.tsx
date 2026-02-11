@@ -10,11 +10,15 @@ import { Label } from "@/components/ui/label";
 type ComposeEmailProps = {
   onSend: (to: string, subject: string, body: string) => Promise<void>;
   onCancel: () => void;
+  isPending: boolean;
 };
 
-export function ComposeEmail({ onSend, onCancel }: ComposeEmailProps) {
+export function ComposeEmail({
+  onSend,
+  onCancel,
+  isPending,
+}: ComposeEmailProps) {
   const searchParams = useSearchParams();
-  const [sending, setSending] = useState(false);
 
   const [email, setEmail] = useState({
     to: "",
@@ -26,19 +30,13 @@ export function ComposeEmail({ onSend, onCancel }: ComposeEmailProps) {
     const to = searchParams.get("to") ?? "";
     const subject = searchParams.get("subject") ?? "";
     const body = searchParams.get("body") ?? "";
-    if (to || subject || body) {
-      setEmail({ to, subject, body });
-    }
+
+    setEmail({ to, subject, body });
   }, [searchParams]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSending(true);
-    try {
-      await onSend(email.to, email.subject, email.body);
-    } finally {
-      setSending(false);
-    }
+    onSend(email.to, email.subject, email.body);
   };
 
   return (
@@ -86,8 +84,8 @@ export function ComposeEmail({ onSend, onCancel }: ComposeEmailProps) {
         </div>
 
         <div className="flex gap-3">
-          <Button type="submit" className="cursor-pointer" disabled={sending}>
-            {sending ? "Sending..." : "Send"}
+          <Button type="submit" className="cursor-pointer" disabled={isPending}>
+            {isPending ? "Sending..." : "Send"}
           </Button>
 
           <Button
