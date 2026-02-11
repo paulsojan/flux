@@ -111,9 +111,9 @@ email_agent = LlmAgent(
         - After calling read_email, use navigate_to to show the email detail view.
     """,
     tools=[list_inbox, list_sent, read_email, reply_email, search_emails],
-    before_agent_callback=on_before_agent,
-    before_model_callback=before_model_modifier,
-    after_model_callback=simple_after_model_modifier,
+    # before_agent_callback=on_before_agent,
+    # before_model_callback=before_model_modifier,
+    # after_model_callback=simple_after_model_modifier,
 )
 
 adk_email_agent = ADKAgent(

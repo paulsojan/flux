@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { AgentState } from "@/lib/types";
 
 const VIEW_TO_ROUTE: Record<string, string> = {
   inbox: "/inbox",
@@ -17,69 +16,34 @@ function resolveRoute(view: string, emailId?: string): string | null {
   return VIEW_TO_ROUTE[view] ?? null;
 }
 
-export function useAgentSync(state?: AgentState) {
+export function useAgentSync() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const stateRef = useRef(state);
-  const prevViewRef = useRef<string | undefined>(state?.current_view);
-
-  const navigate = useCallback(
-    (view: string, emailId?: string) => {
+  const handleNavigateTo = useCallback(
+    async ({ view, emailId }: { view: string; emailId?: string }) => {
       const target = resolveRoute(view, emailId);
-      if (!target) return;
+      if (!target) return "Invalid view";
 
-      const current = window.location.pathname + window.location.search;
-
-      if (current !== target) {
-        router.push(target);
-      }
+      router.push(target);
+      return `Navigated to ${view}`;
     },
     [router],
   );
 
-  // agent-driven navigation
-  useEffect(() => {
-    const view = state?.current_view;
-    if (!view || view === prevViewRef.current) return;
-
-    prevViewRef.current = view;
-    navigate(view, state?.current_email?.id);
-  }, [state?.current_view, state?.current_email?.id, navigate]);
-
   const handleSyncToUI = useCallback(
     async ({ target, query }: { target: string; query?: string }) => {
-      const currentState = stateRef.current;
-      if (!currentState) return "No state available";
-
       if (target === "inbox" && query) {
-        const route = `/inbox?query=${encodeURIComponent(query)}`;
-        router.replace(route);
+        router.replace(`/inbox?query=${encodeURIComponent(query)}`);
       }
 
       if (target === "sent" && query) {
-        const route = `/sent?query=${encodeURIComponent(query)}`;
-        router.replace(route);
-      }
-
-      if (target === "email_detail" && currentState.current_email?.id) {
-        queryClient.setQueryData(
-          ["email", currentState.current_email.id],
-          currentState.current_email,
-        );
+        router.replace(`/sent?query=${encodeURIComponent(query)}`);
       }
 
       return `Synced ${target} to UI`;
     },
-    [queryClient, router],
-  );
-
-  const handleNavigateTo = useCallback(
-    async ({ view }: { view: string }) => {
-      navigate(view);
-      return `Navigated to ${view}`;
-    },
-    [navigate],
+    [router],
   );
 
   const handleRefreshEmails = useCallback(

@@ -26,9 +26,6 @@ export type EmailFilters = {
 };
 
 export type AgentState = {
-  emails: EmailSummary[];
-  sent_emails: EmailSummary[];
   current_email: EmailDetail | null;
   current_view: "inbox" | "sent" | "compose" | "detail" | "sent_detail";
-  next_page_token?: string;
 };

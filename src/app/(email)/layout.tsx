@@ -18,32 +18,22 @@ export default function EmailLayout({
   const { data, isLoading } = useFetchAuthStatusApi();
   const authenticated = data?.authenticated ?? false;
 
-  const { state } = useCoAgent<AgentState>({
-    name: "my_agent",
-    initialState: {
-      emails: [],
-      sent_emails: [],
-      current_email: null,
-      current_view: "inbox",
-    },
-  });
-
-  const { handleNavigateTo, handleRefreshEmails, handleSyncToUI, handleComposeEmail } =
-    useAgentSync(state);
+  const {
+    handleNavigateTo,
+    handleRefreshEmails,
+    handleSyncToUI,
+    handleComposeEmail,
+  } = useAgentSync();
 
   useEmailStream();
 
   useFrontendTool({
     name: "navigate_to",
     description:
-      "Navigate the user to a specific view: inbox, sent, or compose",
+      "Navigate to a view. For detail or sent_detail you MUST provide emailId.",
     parameters: [
-      {
-        name: "view",
-        type: "string",
-        description: "The view to navigate to: 'inbox', 'sent', or 'compose'",
-        required: true,
-      },
+      { name: "view", type: "string", required: true },
+      { name: "emailId", type: "string", required: false },
     ],
     handler: handleNavigateTo,
   });

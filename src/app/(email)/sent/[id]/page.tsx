@@ -18,9 +18,7 @@ export default function SentEmailDetailPage() {
 
   useEffect(() => {
     if (email) {
-      setState((prev) => ({
-        emails: prev?.emails ?? [],
-        sent_emails: prev?.sent_emails ?? [],
+      setState(() => ({
         current_email: email,
         current_view: "sent_detail" as const,
       }));

@@ -10,4 +10,5 @@ router = APIRouter()
 async def auth_login():
     gmail = GmailService.get_instance()
     auth_url = gmail.get_auth_url()
+
     return RedirectResponse(url=auth_url)
