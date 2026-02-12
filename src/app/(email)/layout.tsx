@@ -7,17 +7,32 @@ import { useFetchAuthStatusApi } from "@/hooks/tanstack/useAuthApi";
 import { SIDEBAR_CONFIG } from "@/app/constants";
 import { useEmailStream } from "@/hooks/useEmailStream";
 import { useAgentTools } from "@/hooks/useAgentTools";
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { useCoAgent } from "@copilotkit/react-core";
+import { AgentState } from "@/lib/types";
 
 export default function EmailLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
+  const { setState } = useCoAgent<AgentState>({ name: "ai_mail_agent" });
+
   const { data, isLoading } = useFetchAuthStatusApi();
   const authenticated = data?.authenticated ?? false;
 
   useEmailStream();
   useAgentTools();
+
+  useEffect(() => {
+    setState((prev) => ({
+      ...prev,
+      current_view: pathname,
+    }));
+  }, [pathname]);
 
   if (isLoading) {
     return (

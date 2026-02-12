@@ -1,5 +1,6 @@
 "use client";
 
+import { API_BASE } from "@/app/constants";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -8,7 +9,7 @@ export function AuthGate() {
 
   const handleLogin = () => {
     const popup = window.open(
-      "http://localhost:8000/auth/login",
+      `${API_BASE}auth/login`,
       "gmail-auth",
       "width=500,height=700,popup=yes",
     );

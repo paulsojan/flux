@@ -22,14 +22,23 @@ from tools.search_emails import search_emails
 load_dotenv()
 
 
-def inject_current_email(
+def inject_ui_state(
     callback_context: CallbackContext, llm_request: LlmRequest
 ) -> LlmResponse | None:
-    """Inject the currently open email into the LLM context so it can answer
-    questions about it (summarize, from/to, etc.) without needing a tool call."""
-    current_email = callback_context.state.get("current_email")
+    """Inject current UI state (current_email + current_view) into system context."""
+
+    state = callback_context.state or {}
+
+    current_email = state.get("current_email")
+    current_view = state.get("current_view")
+
+    context_parts = []
+
+    if current_view:
+        context_parts.append(f"\n\n--- CURRENT VIEW ---\nView: {current_view}\n")
+
     if current_email:
-        email_context = (
+        context_parts.append(
             f"\n\n--- CURRENTLY OPEN EMAIL ---\n"
             f"ID: {current_email.get('id', 'N/A')}\n"
             f"From: {current_email.get('from', 'N/A')}\n"
@@ -38,8 +47,11 @@ def inject_current_email(
             f"Date: {current_email.get('date', 'N/A')}\n"
             f"Body:\n{current_email.get('body', '(empty)')}\n"
         )
+
+    if context_parts:
         existing = llm_request.config.system_instruction or ""
-        llm_request.config.system_instruction = existing + email_context
+        llm_request.config.system_instruction = existing + "".join(context_parts)
+
     return None
 
 
@@ -57,6 +69,7 @@ email_agent = LlmAgent(
         5. Search emails using search_emails (supports Gmail search syntax)
         6. Reply to the currently open email using reply_email (only requires the reply body text)
         7. Sync data to UI using sync_emails_to_ui (updates the displayed email list or detail)
+        8. Should know about the current view.
 
         RULES:
         - If the user is not authenticated, tell them to click "Sign in with Google" first.
@@ -72,7 +85,7 @@ email_agent = LlmAgent(
         - After calling read_email, use navigate_to to show the email detail view.
     """,
     tools=[list_inbox, list_sent, read_email, reply_email, search_emails],
-    before_model_callback=inject_current_email,
+    before_model_callback=inject_ui_state,
 )
 
 adk_email_agent = ADKAgent(
