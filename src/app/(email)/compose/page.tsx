@@ -4,6 +4,7 @@ import { ComposeEmail } from "@/components/ComposeEmail";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCreateEmailApi } from "@/hooks/tanstack/useEmailsApi";
+import { toast } from "sonner";
 
 export default function ComposePage() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function ComposePage() {
     createEmail(payload, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["send-emails"] });
+        toast.success("Mail send successfully!");
         router.push("/sent");
       },
     });

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
 from gmail_service import GmailService
 
@@ -10,7 +10,7 @@ async def api_send_email(request: Request):
     gmail = GmailService.get_instance()
 
     if not gmail.is_authenticated:
-        return {"error": "Not authenticated"}
+        raise HTTPException(status_code=401, detail="Not authenticated")
 
     body = await request.json()
     return gmail.send_message(

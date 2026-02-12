@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from gmail_service import GmailService
 
@@ -15,7 +15,7 @@ async def api_list_emails(
     gmail = GmailService.get_instance()
 
     if not gmail.is_authenticated:
-        return {"error": "Not authenticated", "emails": [], "nextPageToken": None}
+        raise HTTPException(status_code=401, detail="Not authenticated")
 
     result = gmail.list_messages(
         label=label, max_results=max_results, page_token=page_token, query=query
