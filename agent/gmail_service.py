@@ -121,7 +121,7 @@ class GmailService:
     def send_message(self, to: str, subject: str, body: str) -> dict:
         self._require_auth()
 
-        msg = MIMEText(body)
+        msg = MIMEText(body, "html")
         msg["to"] = to
         msg["subject"] = subject
 

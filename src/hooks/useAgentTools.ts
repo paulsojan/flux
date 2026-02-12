@@ -7,6 +7,7 @@ export function useAgentTools() {
     handleRefreshEmails,
     handleSyncToUI,
     handleComposeEmail,
+    handleForwardEmail,
   } = useAgentSync();
 
   useFrontendTool({
@@ -82,5 +83,26 @@ export function useAgentTools() {
       },
     ],
     handler: handleComposeEmail,
+  });
+
+  useFrontendTool({
+    name: "forward_email",
+    description:
+      "Forward the currently open email. Opens the compose form pre-filled with 'Fwd:' subject and quoted original body so the user can review before sending.",
+    parameters: [
+      {
+        name: "to",
+        type: "string",
+        description: "Recipient email address (optional if user hasn't specified one)",
+        required: false,
+      },
+      {
+        name: "body",
+        type: "string",
+        description: "Optional personal message to include above the forwarded content",
+        required: false,
+      },
+    ],
+    handler: handleForwardEmail,
   });
 }

@@ -1,126 +1,110 @@
-# CopilotKit <> ADK Starter
+# AI Mail Web App
 
-This is a starter template for building AI agents using Google's [ADK](https://google.github.io/adk-docs/) and [CopilotKit](https://copilotkit.ai). It provides a modern Next.js application with an integrated investment analyst agent that can research stocks, analyze market data, and provide investment insights.
+An AI-powered Gmail client built with `Next.js` and `Google ADK`. It uses CopilotKit to let users manage their email through natural language allowing reading, searching, composing, and replying to emails via an AI agent backed by Gemini.
+
+## Architecture
+
+The app consists of two services: a **Next.js frontend** (`src/`) on `localhost:3000` and a **FastAPI backend** (`agent/`) on `localhost:8000`.
+
+### Google ADK (Agent Development Kit)
+
+The backend AI agent is built with [Google ADK](https://google.github.io/adk-docs/). ADK provides a structured framework for defining tools, managing tool-calling workflows, and handling the full LLM execution lifecycle. The agent is configured with tools such as: `list_inbox`, `list_sent`, `read_email`, `reply_email`, `search_emails`. Each of these tools internally interacts with the Gmail service.
+
+Also, ADK callbacks are used, that runs before every LLM invocation. It reads the current UI state from the tool context and appends it to the system prompt. This ensures the model has awareness of the active view, selected email, and other relevant UI state.
+
+### CopilotKit
+
+[CopilotKit](https://copilotkit.ai/) provides the orchestration layer between the React frontend and the ADK agent. It provides the chat UI components, runtime bridge that connects to the backend agent.
+
+I have also used CopilotKit **frontend tools**, allowing the ADK agent to trigger client-side actions. I have used frontend tools to trigger frontend actions such as navigating to a page, pre-filling a compose form, or syncing search results into the UI.
+
+Because the current UI state is injected into the agent’s system, the agent can coordinate both backend Gmail operations and frontend UI updates in a single conversational flow.
+
+### Request flow
+
+When the user types a message in the chat sidebar:
+
+1. The user sends a message via a CopilotKit React component.
+2. CopilotKit forwards the request to the Next.js API route, which is send it to the FastAPI backend via AG-UI.
+3. ADK's `inject_ui_state` callback appends the current UI context to the system prompt.
+4. Gemini receives the prompt along with the available backend and frontend tool definitions.
+5. The model either responds directly or invokes tools. If a backend tool is called, ADK executes it on the server. If a frontend tool is called, ADK does not execute it instead, it returns the tool call as structured output. CopilotKit receives this tool call in the browser and executes.
+6. Finally, the model’s response along with any tool call events, streams back through AG-UI and CopilotKit to the chat sidebar.
+
+### GmailService
+
+On the backend, `GmailService` wraps the Gmail API. It handles:
+
+- OAuth
+
+- Email listing
+
+- Reading messages
+
+- Sending and replying
+
+- Searching emails
+
+Real-time updates are handled via Server-Sent Events. The backend polls Gmail history every 10 seconds and pushes events when new or deleted emails are detected, which the frontend uses to invalidate its React Query cache and refresh the UI.
+
+## Trade-offs
+
+The current architecture stores OAuth tokens in memory on the backend, so only one Gmail account can be connected at a time. Supporting multiple accounts would require a persistent database to store per-user tokens to route requests to the correct credentials. Since I focused on the core architecture, this can be implemented later.
 
 ## Prerequisites
 
-- Node.js 18+
-- Python 3.12+
-- Google Makersuite API Key (for the ADK agent) (see https://makersuite.google.com/app/apikey)
-- Any of the following package managers:
-  - pnpm (recommended)
-  - npm
-  - yarn
-  - bun
+- **Node.js** >= 22
+- **Python** >= 3.12
+- **[uv](https://docs.astral.sh/uv/)** — Python package manager (used for the agent)
 
-> **Note:** This repository ignores lock files (package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb) to avoid conflicts between different package managers. Each developer should generate their own lock file using their preferred package manager. After that, make sure to delete it from the .gitignore.
+## Local Setup
 
-## Getting Started
+### 1. Clone the repository
 
-1. Install dependencies using your preferred package manager:
 ```bash
-# Using pnpm (recommended)
-pnpm install
+git clone <repo-url>
+cd ai-mail-web-applications
+```
 
-# Using npm
-npm install
+### 2. Configure environment variables
 
-# Using yarn
+Create a `.env` file in the project root with your Google Cloud credentials:
+
+```env
+GOOGLE_API_KEY="your-google-api-key"
+GMAIL_CLIENT_ID="your-oauth-client-id"
+GMAIL_CLIENT_SECRET="your-oauth-client-secret"
+GMAIL_REDIRECT_URI="http://localhost:8000/auth/callback"
+```
+
+> Your OAuth client must have `http://localhost:8000/auth/callback` as an authorized redirect URI and `http://localhost:3000` as an authorized JavaScript origin.
+
+### 3. Install dependencies
+
+```bash
 yarn install
-
-# Using bun
-bun install
 ```
 
-2. Install Python dependencies for the ADK agent:
+This installs both the Node.js dependencies and the Python agent dependencies (via the `postinstall` script which runs `uv sync` in the `agent/` directory).
+
+### 4. Start the development servers
+
 ```bash
-# Using pnpm
-pnpm install:agent
-
-# Using npm
-npm run install:agent
-
-# Using yarn
-yarn install:agent
-
-# Using bun
-bun run install:agent
-```
-
-> **Note:** This will automatically setup a `.venv` (virtual environment) inside the `agent` directory.
->
-> To activate the virtual environment manually, you can run:
-> ```bash
-> source agent/.venv/bin/activate
-> ```
-
-
-3. Set up your Google API key:
-```bash
-export GOOGLE_API_KEY="your-google-api-key-here"
-```
-
-4. Start the development server:
-```bash
-# Using pnpm
-pnpm dev
-
-# Using npm
-npm run dev
-
-# Using yarn
 yarn dev
-
-# Using bun
-bun run dev
 ```
 
-This will start both the UI and agent servers concurrently.
+This starts both services concurrently:
 
-## Available Scripts
-The following scripts can also be run using your preferred package manager:
-- `dev` - Starts both UI and agent servers in development mode
-- `dev:debug` - Starts development servers with debug logging enabled
-- `dev:ui` - Starts only the Next.js UI server
-- `dev:agent` - Starts only the ADK agent server
-- `build` - Builds the Next.js application for production
-- `start` - Starts the production server
-- `lint` - Runs ESLint for code linting
-- `install:agent` - Installs Python dependencies for the agent
+[http://localhost:3000](http://localhost:3000)
 
-## Documentation
+### 5. Authenticate with Gmail
 
-The main UI component is in `src/app/page.tsx`. You can:
-- Modify the theme colors and styling
-- Add new frontend actions
-- Customize the CopilotKit sidebar appearance
+Open [http://localhost:3000](http://localhost:3000) and click "Sign in with Google" to authorize the app to access your Gmail account.
 
-## 📚 Documentation
+## Improvements
 
-- [ADK Documentation](https://google.github.io/adk-docs/) - Learn more about the ADK and its features
-- [CopilotKit Documentation](https://docs.copilotkit.ai) - Explore CopilotKit's capabilities
-- [Next.js Documentation](https://nextjs.org/docs) - Learn about Next.js features and API
-
-
-## Contributing
-
-Feel free to submit issues and enhancement requests! This starter is designed to be easily extensible.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Troubleshooting
-
-### Agent Connection Issues
-If you see "I'm having trouble connecting to my tools", make sure:
-1. The ADK agent is running on port 8000
-2. Your Google API key is set correctly
-3. Both servers started successfully
-
-### Python Dependencies
-If you encounter Python import errors:
-```bash
-cd agent
-pip install -r requirements.txt
-```
+- Implement email threading/grouping
+- No attachment support
+- No CC/BCC fields in compose
+- No draft saving
+- No delete, archive, or spam actions on emails

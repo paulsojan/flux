@@ -3,6 +3,9 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCoAgent } from "@copilotkit/react-core";
+import { AgentState } from "@/lib/types";
+import { useComposeStore } from "@/store/composeStore";
 
 const VIEW_TO_ROUTE: Record<string, string> = {
   inbox: "/inbox",
@@ -19,6 +22,8 @@ function resolveRoute(view: string, emailId?: string): string | null {
 export function useAgentSync() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { state } = useCoAgent<AgentState>({ name: "ai_mail_agent" });
+  const { setEmail } = useComposeStore();
 
   const handleNavigateTo = useCallback(
     async ({ view, emailId }: { view: string; emailId?: string }) => {
@@ -57,16 +62,48 @@ export function useAgentSync() {
 
   const handleComposeEmail = useCallback(
     ({ to, subject, body }: { to: string; subject: string; body: string }) => {
-      const params = new URLSearchParams();
-      if (to) params.set("to", to);
-      if (subject) params.set("subject", subject);
-      if (body) params.set("body", body);
+      setEmail({
+        to,
+        subject,
+        body,
+      });
 
-      router.push(`/compose?${params.toString()}`);
+      router.push("/compose");
 
       return "Opened compose form with pre-filled data";
     },
-    [router],
+    [router, setEmail],
+  );
+
+  const handleForwardEmail = useCallback(
+    ({ to, body }: { to?: string; body?: string }) => {
+      const email = state.current_email;
+      if (!email) return "No email is currently open";
+
+      const subject = email.subject.toLowerCase().startsWith("fwd:")
+        ? email.subject
+        : `Fwd: ${email.subject}`;
+
+      const forwarded =
+        `${body ?? ""}\n\n` +
+        `---------- Forwarded message ----------\n` +
+        `From: ${email.from}\n` +
+        `Date: ${email.date}\n` +
+        `Subject: ${email.subject}\n` +
+        `To: ${email.to}\n\n` +
+        `${email.body}`;
+
+      setEmail({
+        to,
+        subject,
+        body: forwarded,
+      });
+
+      router.push("/compose");
+
+      return "Opened compose form with forwarded email";
+    },
+    [router, state, setEmail],
   );
 
   return {
@@ -74,5 +111,6 @@ export function useAgentSync() {
     handleRefreshEmails,
     handleSyncToUI,
     handleComposeEmail,
+    handleForwardEmail,
   };
 }
