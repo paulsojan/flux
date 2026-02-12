@@ -53,9 +53,7 @@ def test_send_email_with_missing_fields(client):
         response = client.post("/api/emails/send", json={})
 
         assert response.status_code == 200
-        mock_gmail.send_message.assert_called_once_with(
-            to="", subject="", body=""
-        )
+        mock_gmail.send_message.assert_called_once_with(to="", subject="", body="")
 
 
 def test_send_email_not_authenticated(client):
@@ -71,6 +69,6 @@ def test_send_email_not_authenticated(client):
             json={"to": "test@example.com", "subject": "Hi", "body": "Hello"},
         )
 
-        assert response.status_code == 200
-        assert response.json() == {"error": "Not authenticated"}
+        assert response.status_code == 401
+        assert response.json()["detail"] == "Not authenticated"
         mock_gmail.send_message.assert_not_called()

@@ -69,10 +69,6 @@ def test_list_emails_not_authenticated(client):
     ):
         response = client.get("/api/emails")
 
-        assert response.status_code == 200
-        assert response.json() == {
-            "error": "Not authenticated",
-            "emails": [],
-            "nextPageToken": None,
-        }
+        assert response.status_code == 401
+        assert response.json()["detail"] == "Not authenticated"
         mock_gmail.list_messages.assert_not_called()

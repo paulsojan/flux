@@ -48,9 +48,7 @@ def test_search_emails_with_custom_max_results(client):
         response = client.get("/api/emails/search?q=test&max_results=5")
 
         assert response.status_code == 200
-        mock_gmail.search_messages.assert_called_once_with(
-            query="test", max_results=5
-        )
+        mock_gmail.search_messages.assert_called_once_with(query="test", max_results=5)
 
 
 def test_search_emails_not_authenticated(client):
@@ -63,6 +61,6 @@ def test_search_emails_not_authenticated(client):
     ):
         response = client.get("/api/emails/search?q=hello")
 
-        assert response.status_code == 200
-        assert response.json() == {"error": "Not authenticated", "emails": []}
+        assert response.status_code == 401
+        assert response.json()["detail"] == "Not authenticated"
         mock_gmail.search_messages.assert_not_called()

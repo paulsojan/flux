@@ -45,6 +45,6 @@ def test_get_email_not_authenticated(client):
     ):
         response = client.get("/api/emails/abc123")
 
-        assert response.status_code == 200
-        assert response.json() == {"error": "Not authenticated"}
+        assert response.status_code == 401
+        assert response.json()["detail"] == "Not authenticated"
         mock_gmail.get_message.assert_not_called()
