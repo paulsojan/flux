@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCoAgent } from "@copilotkit/react-core";
@@ -24,6 +24,11 @@ export function useAgentSync() {
   const queryClient = useQueryClient();
   const { state } = useCoAgent<AgentState>({ name: "ai_mail_agent" });
   const { setEmail } = useComposeStore();
+
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const handleNavigateTo = useCallback(
     async ({ view, emailId }: { view: string; emailId?: string }) => {
@@ -77,7 +82,7 @@ export function useAgentSync() {
 
   const handleForwardEmail = useCallback(
     ({ to, body }: { to?: string; body?: string }) => {
-      const email = state.current_email;
+      const email = stateRef.current.current_email;
       if (!email) return "No email is currently open";
 
       const subject = email.subject.toLowerCase().startsWith("fwd:")
@@ -103,7 +108,7 @@ export function useAgentSync() {
 
       return "Opened compose form with forwarded email";
     },
-    [router, state, setEmail],
+    [router, setEmail],
   );
 
   return {

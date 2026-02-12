@@ -26,12 +26,11 @@ export function ComposeEmail({
   const { email: storeEmail, clearEmail } = useComposeStore();
 
   useEffect(() => {
-    if (email) {
-      setEmail({ ...storeEmail });
-
+    if (storeEmail) {
+      setEmail(storeEmail);
       clearEmail();
     }
-  }, [storeEmail]);
+  }, [storeEmail, clearEmail]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,10 +84,15 @@ export function ComposeEmail({
         </div>
 
         <div className="flex gap-3 shrink-0">
-          <Button type="submit" disabled={isPending}>
+          <Button type="submit" className="cursor-pointer" disabled={isPending}>
             {isPending ? "Sending..." : "Send"}
           </Button>
-          <Button type="button" variant="secondary" onClick={onCancel}>
+          <Button
+            className="cursor-pointer"
+            type="button"
+            variant="secondary"
+            onClick={onCancel}
+          >
             Cancel
           </Button>
         </div>

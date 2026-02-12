@@ -2,6 +2,8 @@
 
 An AI-powered Gmail client built with `Next.js` and `Google ADK`. It uses CopilotKit to let users manage their email through natural language allowing reading, searching, composing, and replying to emails via an AI agent backed by Gemini.
 
+Demo: https://paulsojan.neetorecord.com/watch/4577aac089039f6b2f0f
+
 ## Architecture
 
 The app consists of two services: a **Next.js frontend** (`src/`) on `localhost:3000` and a **FastAPI backend** (`agent/`) on `localhost:8000`.
@@ -61,11 +63,6 @@ The current architecture stores OAuth tokens in memory on the backend, so only o
 
 ### 1. Clone the repository
 
-```bash
-git clone <repo-url>
-cd ai-mail-web-applications
-```
-
 ### 2. Configure environment variables
 
 Create a `.env` file in the project root with your Google Cloud credentials:
@@ -100,6 +97,12 @@ This starts both services concurrently:
 ### 5. Authenticate with Gmail
 
 Open [http://localhost:3000](http://localhost:3000) and click "Sign in with Google" to authorize the app to access your Gmail account.
+
+## To run tests
+
+```bash
+uv run pytest
+```
 
 ## Improvements
 
