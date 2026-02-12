@@ -1,6 +1,6 @@
 # AI Mail Web App
 
-An AI-powered Gmail client built with `Next.js` and `Google ADK`. It uses CopilotKit to let users manage their email through natural language allowing reading, searching, composing, and replying to emails via an AI agent backed by Gemini.
+An AI-powered Gmail client built with `Next.js` and `Google ADK`. It uses CopilotKit to let users manage their email through natural language, allowing reading, searching, composing, and replying/forwarding to emails via an AI agent backed by Gemini.
 
 Demo: https://paulsojan.neetorecord.com/watch/4577aac089039f6b2f0f
 
