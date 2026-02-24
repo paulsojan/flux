@@ -1,6 +1,6 @@
 # Flux
 
-Flix is an intelligent context aware email agent that allows you to manage your inbox using natural language.
+Flux is an intelligent context aware email agent that allows you to manage your inbox using natural language.
 
 Demo: https://paulsojan.neetorecord.com/watch/4577aac089039f6b2f0f
 
