@@ -1,6 +1,6 @@
-# AI Mail Web App
+# Flux
 
-An AI-powered Gmail client built with `Next.js` and `Google ADK`. It uses CopilotKit to let users manage their email through natural language, allowing reading, searching, composing, and replying/forwarding to emails via an AI agent backed by Gemini.
+Flix is an intelligent context aware email agent that allows you to manage your inbox using natural language.
 
 Demo: https://paulsojan.neetorecord.com/watch/4577aac089039f6b2f0f
 
