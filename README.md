@@ -2,7 +2,7 @@
 
 Flux is an intelligent context aware email agent that allows you to manage your inbox using natural language.
 
-Demo: https://paulsojan.neetorecord.com/watch/4577aac089039f6b2f0f
+Demo: https://drive.google.com/file/d/1uz_hw33jHji-6-pjzixXsAKPgKpiRGse/view?usp=sharing
 
 ## Architecture
 
